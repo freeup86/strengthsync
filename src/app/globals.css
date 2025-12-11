@@ -1,0 +1,324 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Typography */
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* Border Radius */
+  --radius: 0.75rem;
+
+  /* CliftonStrengths Domain Colors */
+  --domain-executing: #7B68EE;
+  --domain-executing-light: #E8E4F8;
+  --domain-executing-dark: #5B4BC7;
+
+  --domain-influencing: #F5A623;
+  --domain-influencing-light: #FEF3DB;
+  --domain-influencing-dark: #D4860F;
+
+  --domain-relationship: #4A90D9;
+  --domain-relationship-light: #E3F0FA;
+  --domain-relationship-dark: #2E6DB5;
+
+  --domain-strategic: #7CB342;
+  --domain-strategic-light: #EDF5E4;
+  --domain-strategic-dark: #5D8A2F;
+
+  /* Light Theme */
+  --background: 45 20% 98%;
+  --foreground: 220 20% 15%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 220 20% 15%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 20% 15%;
+
+  --primary: 245 58% 51%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 220 20% 25%;
+
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 10% 45%;
+
+  --accent: 36 100% 50%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 245 58% 51%;
+}
+
+.dark {
+  --background: 220 20% 10%;
+  --foreground: 45 20% 98%;
+
+  --card: 220 20% 13%;
+  --card-foreground: 45 20% 98%;
+
+  --popover: 220 20% 13%;
+  --popover-foreground: 45 20% 98%;
+
+  --primary: 245 58% 61%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 220 20% 18%;
+  --secondary-foreground: 45 15% 85%;
+
+  --muted: 220 20% 18%;
+  --muted-foreground: 220 10% 55%;
+
+  --accent: 36 100% 55%;
+  --accent-foreground: 220 20% 10%;
+
+  --destructive: 0 72% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 20% 20%;
+  --input: 220 20% 20%;
+  --ring: 245 58% 61%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Domain-colored gradient backgrounds */
+  .bg-domain-executing-gradient {
+    background: linear-gradient(135deg, var(--domain-executing) 0%, var(--domain-executing-dark) 100%);
+  }
+
+  .bg-domain-influencing-gradient {
+    background: linear-gradient(135deg, var(--domain-influencing) 0%, var(--domain-influencing-dark) 100%);
+  }
+
+  .bg-domain-relationship-gradient {
+    background: linear-gradient(135deg, var(--domain-relationship) 0%, var(--domain-relationship-dark) 100%);
+  }
+
+  .bg-domain-strategic-gradient {
+    background: linear-gradient(135deg, var(--domain-strategic) 0%, var(--domain-strategic-dark) 100%);
+  }
+
+  /* Domain glow effects */
+  .glow-executing {
+    box-shadow: 0 0 30px -5px var(--domain-executing);
+  }
+
+  .glow-influencing {
+    box-shadow: 0 0 30px -5px var(--domain-influencing);
+  }
+
+  .glow-relationship {
+    box-shadow: 0 0 30px -5px var(--domain-relationship);
+  }
+
+  .glow-strategic {
+    box-shadow: 0 0 30px -5px var(--domain-strategic);
+  }
+
+  /* Animated gradient mesh background */
+  .mesh-gradient {
+    background:
+      radial-gradient(at 40% 20%, rgba(123, 104, 238, 0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, rgba(245, 166, 35, 0.15) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, rgba(74, 144, 217, 0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 100%, rgba(124, 179, 66, 0.15) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(123, 104, 238, 0.1) 0px, transparent 50%);
+  }
+
+  /* Soft card with hover lift */
+  .card-interactive {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .card-interactive:hover {
+    @apply -translate-y-1;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Strength card shine effect */
+  .strength-card-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .strength-card-shine::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0.3) 50%,
+      rgba(255, 255, 255, 0) 60%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: rotate(45deg);
+    transition: transform 0.6s ease-out;
+    pointer-events: none;
+  }
+
+  .strength-card-shine:hover::after {
+    transform: rotate(45deg) translate(100%, 100%);
+  }
+
+  /* Floating orbs decoration */
+  .floating-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.4;
+    animation: float 8s ease-in-out infinite;
+  }
+
+  /* Staggered animations */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+  .stagger-6 { animation-delay: 0.6s; }
+  .stagger-7 { animation-delay: 0.7s; }
+  .stagger-8 { animation-delay: 0.8s; }
+
+  /* Smooth scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted/30 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full;
+    transition: background 0.2s;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/70 dark:bg-black/30 backdrop-blur-xl border border-white/20;
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, var(--domain-executing) 0%, var(--domain-influencing) 33%, var(--domain-strategic) 66%, var(--domain-relationship) 100%);
+  }
+
+  /* Badge pill styles */
+  .badge-executing {
+    @apply bg-domain-executing-light text-domain-executing-dark border border-domain-executing/20;
+  }
+
+  .badge-influencing {
+    @apply bg-domain-influencing-light text-domain-influencing-dark border border-domain-influencing/20;
+  }
+
+  .badge-relationship {
+    @apply bg-domain-relationship-light text-domain-relationship-dark border border-domain-relationship/20;
+  }
+
+  .badge-strategic {
+    @apply bg-domain-strategic-light text-domain-strategic-dark border border-domain-strategic/20;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Perspective for 3D effects */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  /* Preserve 3D for children */
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  /* Backface hidden */
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  /* Text balance */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Animation paused */
+  .animate-paused {
+    animation-play-state: paused;
+  }
+
+  /* Noise overlay */
+  .noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+}
+
+/* Custom focus styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-primary/20 text-foreground;
+}
+
+/* Smooth transitions for theme changes */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

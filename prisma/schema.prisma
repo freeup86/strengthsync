@@ -1,0 +1,591 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE DOMAIN: CliftonStrengths Reference Data
+// ============================================================================
+
+model StrengthDomain {
+  id          String          @id @default(cuid())
+  name        String          @unique // Executing, Influencing, Relationship Building, Strategic Thinking
+  slug        String          @unique // executing, influencing, relationship, strategic
+  description String
+  colorHex    String          // Brand color #hex
+  colorName   String          // purple, orange, blue, green
+  iconName    String          // Lucide icon name
+  themes      StrengthTheme[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("strength_domains")
+}
+
+model StrengthTheme {
+  id               String   @id @default(cuid())
+  name             String   @unique // Achiever, Strategic, etc.
+  slug             String   @unique // achiever, strategic, etc.
+  shortDescription String   // One-liner description
+  fullDescription  String   @db.Text // Detailed description
+  domainId         String
+  domain           StrengthDomain @relation(fields: [domainId], references: [id])
+  blindSpots       String[] // Common blind spots when overused
+  actionItems      String[] // Suggested action items
+  worksWith        String[] // Theme names that complement this
+  keywords         String[] // Searchable keywords
+
+  // Relationships
+  memberStrengths MemberStrength[]
+  shoutouts       Shoutout[]
+  skillRequests   SkillRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("strength_themes")
+}
+
+// ============================================================================
+// ORGANIZATIONS & USERS
+// ============================================================================
+
+model Organization {
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  logoUrl           String?
+  description       String?
+  settings          Json     @default("{}")
+  inviteCode        String   @unique @default(cuid())
+  inviteCodeEnabled Boolean  @default(true)
+
+  members       OrganizationMember[]
+  skillRequests SkillRequest[]
+  challenges    TeamChallenge[]
+  shoutouts     Shoutout[]
+  feedItems     FeedItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("organizations")
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  passwordHash         String?
+  fullName             String
+  avatarUrl            String?
+  jobTitle             String?
+  department           String?
+  location             String?
+  bio                  String?   @db.Text
+  linkedInUrl          String?
+  pronouns             String?
+  emailVerified        Boolean   @default(false)
+  emailVerifyToken     String?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  preferences          Json      @default("{}")
+  lastLoginAt          DateTime?
+
+  organizationMemberships OrganizationMember[]
+  uploadedDocuments       StrengthsDocument[]
+  notifications           Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role   MemberRole   @default(MEMBER)
+  status MemberStatus @default(ACTIVE)
+
+  // Strengths data
+  strengths           MemberStrength[]
+  strengthsImportedAt DateTime?
+  strengthsDocumentId String?
+  strengthsDocument   StrengthsDocument? @relation(fields: [strengthsDocumentId], references: [id])
+
+  // Skills and expertise
+  expertiseTags ExpertiseTag[]
+  interests     String[]
+
+  // Gamification
+  badgesEarned   BadgeEarned[]
+  points         Int           @default(0)
+  streak         Int           @default(0)
+  lastActivityAt DateTime?
+
+  // Social relationships
+  shoutoutsGiven           Shoutout[]              @relation("ShoutoutGiver")
+  shoutoutsReceived        Shoutout[]              @relation("ShoutoutReceiver")
+  skillRequestsCreated     SkillRequest[]          @relation("RequestCreator")
+  skillRequestResponses    SkillRequestResponse[]
+  mentorshipsAsMentor      Mentorship[]            @relation("Mentor")
+  mentorshipsAsMentee      Mentorship[]            @relation("Mentee")
+  feedItemsCreated         FeedItem[]
+  reactions                Reaction[]
+  comments                 Comment[]
+  challengeParticipations  ChallengeParticipant[]
+
+  joinedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+// ============================================================================
+// STRENGTHS DATA
+// ============================================================================
+
+model MemberStrength {
+  id       String             @id @default(cuid())
+  memberId String
+  member   OrganizationMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  themeId  String
+  theme    StrengthTheme      @relation(fields: [themeId], references: [id])
+
+  rank    Int     // 1-34 ranking
+  isTop5  Boolean @default(false)
+  isTop10 Boolean @default(false)
+
+  // Personalized insights from PDF
+  personalizedDescription String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, themeId])
+  @@unique([memberId, rank])
+  @@map("member_strengths")
+}
+
+model StrengthsDocument {
+  id           String @id @default(cuid())
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+
+  fileName  String
+  fileSize  Int
+  mimeType  String
+  s3Key     String?
+  localPath String?
+
+  processingStatus ProcessingStatus @default(PENDING)
+  processingError  String?
+  extractedData    Json? // Raw extracted data from PDF
+
+  members OrganizationMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("strengths_documents")
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ExpertiseTag {
+  id       String             @id @default(cuid())
+  memberId String
+  member   OrganizationMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  name         String
+  category     String? // e.g., "Technical", "Leadership", "Domain"
+  endorsements Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, name])
+  @@map("expertise_tags")
+}
+
+// ============================================================================
+// SOCIAL FEATURES
+// ============================================================================
+
+model Shoutout {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  giverId    String
+  giver      OrganizationMember @relation("ShoutoutGiver", fields: [giverId], references: [id])
+  receiverId String
+  receiver   OrganizationMember @relation("ShoutoutReceiver", fields: [receiverId], references: [id])
+
+  themeId String? // Optional: tie to specific strength theme
+  theme   StrengthTheme? @relation(fields: [themeId], references: [id])
+
+  message  String  @db.Text
+  isPublic Boolean @default(true)
+
+  feedItem FeedItem?
+
+  createdAt DateTime @default(now())
+
+  @@map("shoutouts")
+}
+
+model SkillRequest {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  creatorId String
+  creator   OrganizationMember @relation("RequestCreator", fields: [creatorId], references: [id])
+
+  title        String
+  description  String         @db.Text
+  themeId      String? // Optional: specific theme needed
+  theme        StrengthTheme? @relation(fields: [themeId], references: [id])
+  domainNeeded String? // Optional: domain like "Strategic Thinking"
+
+  status   RequestStatus  @default(OPEN)
+  urgency  RequestUrgency @default(NORMAL)
+  deadline DateTime?
+
+  responses SkillRequestResponse[]
+  feedItem  FeedItem?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("skill_requests")
+}
+
+enum RequestStatus {
+  OPEN
+  IN_PROGRESS
+  FULFILLED
+  CLOSED
+}
+
+enum RequestUrgency {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model SkillRequestResponse {
+  id          String             @id @default(cuid())
+  requestId   String
+  request     SkillRequest       @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  responderId String
+  responder   OrganizationMember @relation(fields: [responderId], references: [id])
+
+  message String         @db.Text
+  status  ResponseStatus @default(OFFERED)
+
+  createdAt DateTime @default(now())
+
+  @@map("skill_request_responses")
+}
+
+enum ResponseStatus {
+  OFFERED
+  ACCEPTED
+  DECLINED
+  COMPLETED
+}
+
+model Mentorship {
+  id       String             @id @default(cuid())
+  mentorId String
+  mentor   OrganizationMember @relation("Mentor", fields: [mentorId], references: [id])
+  menteeId String
+  mentee   OrganizationMember @relation("Mentee", fields: [menteeId], references: [id])
+
+  focusAreas String[] // Themes or topics
+  status     MentorshipStatus @default(ACTIVE)
+  notes      String?          @db.Text
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@map("mentorships")
+}
+
+enum MentorshipStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+// ============================================================================
+// GAMIFICATION
+// ============================================================================
+
+model Badge {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  slug        String        @unique
+  description String
+  iconUrl     String
+  category    BadgeCategory
+  requirement Json // Criteria to earn badge
+  points      Int           @default(0)
+  tier        BadgeTier     @default(BRONZE)
+
+  earnedBy BadgeEarned[]
+
+  createdAt DateTime @default(now())
+
+  @@map("badges")
+}
+
+enum BadgeCategory {
+  SHOUTOUT
+  COLLABORATION
+  MENTORSHIP
+  STREAK
+  MILESTONE
+  CHALLENGE
+}
+
+enum BadgeTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+model BadgeEarned {
+  id       String             @id @default(cuid())
+  memberId String
+  member   OrganizationMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  badgeId  String
+  badge    Badge              @relation(fields: [badgeId], references: [id])
+
+  earnedAt DateTime @default(now())
+
+  @@unique([memberId, badgeId])
+  @@map("badges_earned")
+}
+
+model TeamChallenge {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String          @db.Text
+  challengeType ChallengeType
+  rules         Json
+  rewards       Json            @default("{}")
+
+  startsAt DateTime
+  endsAt   DateTime
+  status   ChallengeStatus @default(UPCOMING)
+
+  participants ChallengeParticipant[]
+  feedItem     FeedItem?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("team_challenges")
+}
+
+enum ChallengeType {
+  STRENGTHS_BINGO
+  SHOUTOUT_STREAK
+  MENTORSHIP_MONTH
+  COLLABORATION_QUEST
+  MANIFESTO_EXERCISE
+  THEME_OF_THE_WEEK
+}
+
+enum ChallengeStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model ChallengeParticipant {
+  id          String             @id @default(cuid())
+  challengeId String
+  challenge   TeamChallenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      OrganizationMember @relation(fields: [memberId], references: [id])
+
+  progress    Json     @default("{}")
+  score       Int      @default(0)
+  completedAt DateTime?
+
+  joinedAt DateTime @default(now())
+
+  @@unique([challengeId, memberId])
+  @@map("challenge_participants")
+}
+
+// ============================================================================
+// SOCIAL FEED
+// ============================================================================
+
+model FeedItem {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creatorId      String
+  creator        OrganizationMember @relation(fields: [creatorId], references: [id])
+
+  itemType FeedItemType
+  content  Json // Flexible content based on type
+
+  // Optional relations
+  shoutoutId     String?        @unique
+  shoutout       Shoutout?      @relation(fields: [shoutoutId], references: [id])
+  skillRequestId String?        @unique
+  skillRequest   SkillRequest?  @relation(fields: [skillRequestId], references: [id])
+  challengeId    String?        @unique
+  challenge      TeamChallenge? @relation(fields: [challengeId], references: [id])
+
+  reactions Reaction[]
+  comments  Comment[]
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@map("feed_items")
+}
+
+enum FeedItemType {
+  SHOUTOUT
+  SKILL_REQUEST
+  BADGE_EARNED
+  CHALLENGE_STARTED
+  CHALLENGE_COMPLETED
+  NEW_MEMBER
+  MILESTONE
+  ANNOUNCEMENT
+}
+
+model Reaction {
+  id         String             @id @default(cuid())
+  feedItemId String
+  feedItem   FeedItem           @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     OrganizationMember @relation(fields: [memberId], references: [id])
+
+  emoji String // e.g., "like", "celebrate", "love", "star", "clap"
+
+  createdAt DateTime @default(now())
+
+  @@unique([feedItemId, memberId])
+  @@map("reactions")
+}
+
+model Comment {
+  id         String             @id @default(cuid())
+  feedItemId String
+  feedItem   FeedItem           @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     OrganizationMember @relation(fields: [authorId], references: [id])
+
+  content  String  @db.Text
+  parentId String? // For threaded comments
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  message String
+  link    String?
+
+  read   Boolean   @default(false)
+  readAt DateTime?
+
+  metadata Json @default("{}")
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  SHOUTOUT_RECEIVED
+  SKILL_REQUEST_RESPONSE
+  MENTORSHIP_REQUEST
+  BADGE_EARNED
+  CHALLENGE_INVITE
+  NEW_MEMBER
+  SYSTEM
+}
+
+// ============================================================================
+// AUDIT LOG
+// ============================================================================
+
+model AuditLog {
+  id             String  @id @default(cuid())
+  userId         String?
+  organizationId String?
+
+  action     String
+  entityType String
+  entityId   String?
+
+  oldValue Json?
+  newValue Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
