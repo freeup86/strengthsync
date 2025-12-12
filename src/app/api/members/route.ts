@@ -29,14 +29,40 @@ export async function GET(request: NextRequest) {
       status: "ACTIVE",
     };
 
-    // Search by name
+    // Enhanced search - searches across name, email, job title, department, and strength themes
     if (search) {
-      where.user = {
-        fullName: {
-          contains: search,
-          mode: "insensitive",
+      where.OR = [
+        {
+          user: {
+            fullName: { contains: search, mode: "insensitive" },
+          },
         },
-      };
+        {
+          user: {
+            email: { contains: search, mode: "insensitive" },
+          },
+        },
+        {
+          user: {
+            jobTitle: { contains: search, mode: "insensitive" },
+          },
+        },
+        {
+          user: {
+            department: { contains: search, mode: "insensitive" },
+          },
+        },
+        {
+          strengths: {
+            some: {
+              theme: {
+                name: { contains: search, mode: "insensitive" },
+              },
+              rank: { lte: 10 },
+            },
+          },
+        },
+      ];
     }
 
     // Filter by theme

@@ -26,6 +26,7 @@ import {
   Heart,
   Upload,
   Rss,
+  UserCog,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
@@ -43,6 +44,7 @@ const navigation = [
 ];
 
 const adminNavigation = [
+  { name: "Members", href: "/admin/members", icon: UserCog },
   { name: "Upload Strengths", href: "/admin/upload", icon: Upload },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

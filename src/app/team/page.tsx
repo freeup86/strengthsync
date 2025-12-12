@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Upload,
   UserPlus,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import type { DomainSlug } from "@/constants/strengths-data";
@@ -190,17 +191,53 @@ export default function TeamPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold">Team Analytics</h1>
           <p className="text-muted-foreground mt-1">
             Understand your team&apos;s strengths and find synergies
           </p>
         </div>
-        <Button onClick={fetchData} variant="ghost" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <div className="relative group">
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <div className="absolute right-0 mt-1 w-48 bg-white border rounded-lg shadow-lg z-10 hidden group-hover:block">
+                <a
+                  href="/api/export/team?format=csv"
+                  className="block px-4 py-2 text-sm hover:bg-muted"
+                >
+                  Team Data (CSV)
+                </a>
+                <a
+                  href="/api/export/team?format=json"
+                  className="block px-4 py-2 text-sm hover:bg-muted"
+                >
+                  Team Data (JSON)
+                </a>
+                <a
+                  href="/api/export/analytics?format=csv"
+                  className="block px-4 py-2 text-sm hover:bg-muted"
+                >
+                  Analytics Report (CSV)
+                </a>
+                <a
+                  href="/api/export/analytics?format=json"
+                  className="block px-4 py-2 text-sm hover:bg-muted"
+                >
+                  Analytics Report (JSON)
+                </a>
+              </div>
+            </div>
+          )}
+          <Button onClick={fetchData} variant="ghost" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Empty state */}
