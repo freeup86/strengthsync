@@ -6,3 +6,4 @@ export { Avatar, AvatarImage, AvatarFallback, avatarVariants } from "./Avatar";
 export { ScrollReveal, ScrollRevealGroup } from "./ScrollReveal";
 export { Skeleton, SkeletonCard, SkeletonStrengthBadges, SkeletonDashboardStats, SkeletonMemberCard, SkeletonShoutout } from "./Skeleton";
 export { MagneticButton } from "./MagneticButton";
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./Tooltip";

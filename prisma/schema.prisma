@@ -938,6 +938,30 @@ enum AIPromptCategory {
   ADMIN
 }
 
+model PartnershipReasoning {
+  id             String @id @default(cuid())
+  organizationId String
+
+  // The two members (stored in sorted order for consistent lookups)
+  member1Id String
+  member2Id String
+
+  // Cached AI reasoning
+  reasoning String @db.Text
+
+  // Context used to generate (for invalidation)
+  member1Strengths String[] // Top 5 theme names at generation time
+  member2Strengths String[] // Top 5 theme names at generation time
+
+  // Metadata
+  generatedAt DateTime @default(now())
+  expiresAt   DateTime // Auto-expire after 30 days for freshness
+
+  @@unique([organizationId, member1Id, member2Id])
+  @@index([organizationId])
+  @@map("partnership_reasonings")
+}
+
 model AIUsageLog {
   id             String  @id @default(cuid())
   memberId       String?

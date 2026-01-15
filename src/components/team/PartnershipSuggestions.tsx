@@ -4,9 +4,11 @@ import { useState, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { Handshake, ArrowRight, Sparkles, Users, ChevronDown, ChevronUp, Loader2, Brain, Lightbulb } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/Tooltip";
+import { Handshake, ArrowRight, Users, ChevronDown, ChevronUp, Loader2, Brain, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 
 interface Partnership {
   member1: { id: string; name: string; topTheme: string };
@@ -128,14 +130,29 @@ function PartnershipCard({ partnership }: { partnership: Partnership }) {
           </div>
         </Link>
 
-        {/* Connection indicator */}
-        <div className="flex flex-col items-center">
-          <Sparkles className="h-4 w-4 text-domain-influencing" />
-          <div className="h-px w-8 bg-gradient-to-r from-domain-executing via-domain-influencing to-domain-relationship my-1" />
-          <span className={cn("text-xs font-medium", getScoreColor(partnership.score))}>
-            {partnership.score}
-          </span>
-        </div>
+        {/* Compatibility score */}
+        <TooltipProvider delayDuration={100}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={cn(
+                "flex items-center justify-center w-10 h-10 rounded-full cursor-help",
+                "bg-muted/50 border-2",
+                partnership.score >= 60 ? "border-domain-strategic" :
+                partnership.score >= 40 ? "border-domain-influencing" : "border-domain-relationship"
+              )}>
+                <span className={cn("text-sm font-bold", getScoreColor(partnership.score))}>
+                  {partnership.score}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="font-medium">Compatibility Score</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Based on complementary strengths, domain balance, and theme synergies. Higher scores indicate stronger natural collaboration potential.
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
         {/* Member 2 */}
         <Link
@@ -229,8 +246,8 @@ function PartnershipCard({ partnership }: { partnership: Partnership }) {
                   <Lightbulb className="h-3 w-3" />
                   AI Partnership Analysis
                 </div>
-                <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                  {aiReasoning.reasoning}
+                <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert prose-headings:text-foreground prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-strong:text-foreground max-w-none">
+                  <ReactMarkdown>{aiReasoning.reasoning}</ReactMarkdown>
                 </div>
               </div>
             )}
