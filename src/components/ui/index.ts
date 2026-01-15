@@ -3,3 +3,6 @@ export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, 
 export { Input, inputVariants, type InputProps } from "./Input";
 export { Badge, badgeVariants, type BadgeProps } from "./Badge";
 export { Avatar, AvatarImage, AvatarFallback, avatarVariants } from "./Avatar";
+export { ScrollReveal, ScrollRevealGroup } from "./ScrollReveal";
+export { Skeleton, SkeletonCard, SkeletonStrengthBadges, SkeletonDashboardStats, SkeletonMemberCard, SkeletonShoutout } from "./Skeleton";
+export { MagneticButton } from "./MagneticButton";

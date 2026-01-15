@@ -23,6 +23,7 @@ const recognitionPromptsOutputSchema = z.object({
       context: z.string().describe("What specific behavior or contribution to recognize"),
     })
   ).describe("Array of recognition suggestions"),
+  noSuggestionsReason: z.string().optional().describe("Explanation if no suggestions could be generated"),
 }).describe("Recognition suggestions for team members");
 
 export async function POST(request: NextRequest) {

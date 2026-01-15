@@ -10,6 +10,8 @@ import { DomainIcon } from "@/components/strengths/DomainIcon";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { RecognitionPrompt } from "@/components/notifications/RecognitionPrompt";
+import { ScrollReveal, ScrollRevealGroup } from "@/components/ui/ScrollReveal";
+import { DomainDonutChart } from "@/components/charts/DomainDonutChart";
 import Link from "next/link";
 import {
   Users,
@@ -101,6 +103,28 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+function calculateDomainDistribution(strengths: DashboardData["myStrengths"]) {
+  const distribution = {
+    executing: 0,
+    influencing: 0,
+    relationship: 0,
+    strategic: 0,
+  };
+
+  strengths.forEach((s) => {
+    if (s.domain in distribution) {
+      distribution[s.domain]++;
+    }
+  });
+
+  return [
+    { domain: "executing" as const, value: distribution.executing, label: "Executing" },
+    { domain: "influencing" as const, value: distribution.influencing, label: "Influencing" },
+    { domain: "relationship" as const, value: distribution.relationship, label: "Relationship" },
+    { domain: "strategic" as const, value: distribution.strategic, label: "Strategic" },
+  ].filter((d) => d.value > 0);
+}
+
 const ONBOARDING_KEY = "strengthsync_onboarding_completed";
 
 export default function DashboardPage() {
@@ -177,63 +201,81 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="card-interactive">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Team Members</p>
-                <p className="text-3xl font-display font-bold mt-1">
-                  {loading ? "-" : data?.teamStats.totalMembers || 0}
-                </p>
-              </div>
-              <Users className="h-6 w-6 text-domain-relationship" />
-            </div>
-          </CardContent>
-        </Card>
+      <ScrollRevealGroup staggerDelay={100}>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <ScrollReveal animation="fade-up">
+            <Card className="card-interactive h-full">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Team Members</p>
+                    <p className="text-3xl font-display font-bold mt-1">
+                      {loading ? "-" : data?.teamStats.totalMembers || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-domain-relationship/10">
+                    <Users className="h-6 w-6 text-domain-relationship" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </ScrollReveal>
 
-        <Card className="card-interactive">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Shoutouts This Week</p>
-                <p className="text-3xl font-display font-bold mt-1">
-                  {loading ? "-" : data?.teamStats.shoutoutsThisWeek || 0}
-                </p>
-              </div>
-              <MessageSquare className="h-6 w-6 text-domain-influencing" />
-            </div>
-          </CardContent>
-        </Card>
+          <ScrollReveal animation="fade-up">
+            <Card className="card-interactive h-full">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Shoutouts This Week</p>
+                    <p className="text-3xl font-display font-bold mt-1">
+                      {loading ? "-" : data?.teamStats.shoutoutsThisWeek || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-domain-influencing/10">
+                    <MessageSquare className="h-6 w-6 text-domain-influencing" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </ScrollReveal>
 
-        <Card className="card-interactive">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Your Streak</p>
-                <p className="text-3xl font-display font-bold mt-1">
-                  {loading ? "-" : `${data?.myStreak || 0} days`}
-                </p>
-              </div>
-              <Flame className="h-6 w-6 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
+          <ScrollReveal animation="fade-up">
+            <Card className="card-interactive h-full">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Your Streak</p>
+                    <p className="text-3xl font-display font-bold mt-1">
+                      {loading ? "-" : `${data?.myStreak || 0} days`}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-orange-500/10">
+                    <Flame className="h-6 w-6 text-orange-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </ScrollReveal>
 
-        <Card className="card-interactive">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Your Points</p>
-                <p className="text-3xl font-display font-bold mt-1">
-                  {loading ? "-" : (data?.myPoints || 0).toLocaleString()}
-                </p>
-              </div>
-              <Trophy className="h-6 w-6 text-amber-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <ScrollReveal animation="fade-up">
+            <Card className="card-interactive h-full">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Your Points</p>
+                    <p className="text-3xl font-display font-bold mt-1">
+                      {loading ? "-" : (data?.myPoints || 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-amber-500/10">
+                    <Trophy className="h-6 w-6 text-amber-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </ScrollReveal>
+        </div>
+      </ScrollRevealGroup>
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Main content */}
@@ -483,28 +525,59 @@ export default function DashboardPage() {
           </Card>
 
           {/* Domain overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Strength Domains</CardTitle>
-              <CardDescription>The four categories of CliftonStrengths</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { domain: "executing" as const, name: "Executing", desc: "Making things happen" },
-                { domain: "influencing" as const, name: "Influencing", desc: "Taking charge" },
-                { domain: "relationship" as const, name: "Relationship", desc: "Building bonds" },
-                { domain: "strategic" as const, name: "Strategic", desc: "Better decisions" },
-              ].map((d) => (
-                <div key={d.domain} className="flex items-center gap-3">
-                  <DomainIcon domain={d.domain} size="default" />
-                  <div>
-                    <p className="text-sm font-medium">{d.name}</p>
-                    <p className="text-xs text-muted-foreground">{d.desc}</p>
+          <ScrollReveal animation="fade-up">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Your Domain Mix</CardTitle>
+                <CardDescription>
+                  {data?.myStrengths && data.myStrengths.length > 0
+                    ? "Distribution of your top 5 strengths"
+                    : "The four categories of CliftonStrengths"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {data?.myStrengths && data.myStrengths.length > 0 ? (
+                  <div className="flex flex-col items-center">
+                    <DomainDonutChart
+                      data={calculateDomainDistribution(data.myStrengths.slice(0, 5))}
+                      size={160}
+                      thickness={20}
+                      centerLabel="Top 5"
+                      centerValue={5}
+                      animated
+                    />
+                    <div className="mt-4 grid grid-cols-2 gap-3 w-full">
+                      {calculateDomainDistribution(data.myStrengths.slice(0, 5)).map((d) => (
+                        <div key={d.domain} className="flex items-center gap-2">
+                          <DomainIcon domain={d.domain} size="sm" />
+                          <span className="text-sm">
+                            {d.label}: <strong>{d.value}</strong>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {[
+                      { domain: "executing" as const, name: "Executing", desc: "Making things happen" },
+                      { domain: "influencing" as const, name: "Influencing", desc: "Taking charge" },
+                      { domain: "relationship" as const, name: "Relationship", desc: "Building bonds" },
+                      { domain: "strategic" as const, name: "Strategic", desc: "Better decisions" },
+                    ].map((d) => (
+                      <div key={d.domain} className="flex items-center gap-3">
+                        <DomainIcon domain={d.domain} size="default" />
+                        <div>
+                          <p className="text-sm font-medium">{d.name}</p>
+                          <p className="text-xs text-muted-foreground">{d.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </ScrollReveal>
         </div>
       </div>
 

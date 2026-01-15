@@ -31,10 +31,12 @@ import {
   Database,
   Bot,
   Sparkles,
+  UserPlus,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Logo } from "@/components/brand/Logo";
+import { PageTransition } from "@/components/layout/PageTransition";
 
 // Navigation organized by user workflow (CliftonStrengths journey)
 const navigationSections = [
@@ -57,6 +59,7 @@ const navigationSections = [
     items: [
       { name: "Ask AI", href: "/chat", icon: Bot },
       { name: "Team Analytics", href: "/team", icon: Users },
+      { name: "Directory", href: "/directory", icon: Search },
       { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
     ],
   },
@@ -75,9 +78,9 @@ const adminNavigation = [
   { name: "Manager Dashboard", href: "/admin/dashboard", icon: BarChart3 },
   { name: "Review Cycles", href: "/admin/review-cycles", icon: ClipboardList },
   { name: "Members", href: "/admin/members", icon: UserCog },
+  { name: "Bulk Import", href: "/admin/import", icon: UserPlus },
   { name: "Upload Strengths", href: "/admin/upload", icon: Upload },
   { name: "Strength Constants", href: "/admin/constants", icon: Database },
-  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 interface DashboardLayoutProps {
@@ -240,14 +243,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   My Card
                 </Link>
                 <Link
-                  href="/directory"
-                  onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted"
-                >
-                  <Search className="h-4 w-4" />
-                  Directory
-                </Link>
-                <Link
                   href="/settings/profile"
                   onClick={() => setUserMenuOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted"
@@ -303,8 +298,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="px-4 pt-2 pb-4 md:px-6 md:pt-4 md:pb-6 lg:px-8 lg:pt-4 lg:pb-8">{children}</main>
+        {/* Page content with transition animation */}
+        <main className="px-4 pt-2 pb-4 md:px-6 md:pt-4 md:pb-6 lg:px-8 lg:pt-4 lg:pb-8">
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </main>
       </div>
     </div>
   );

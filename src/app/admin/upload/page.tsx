@@ -61,6 +61,18 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<{
+    errors?: string[];
+    warnings?: string[];
+    parsedThemes?: number;
+    diagnostics?: {
+      textExtracted: boolean;
+      textLength: number;
+      textPreview: string;
+      participantName: string | null;
+      isLikelyImagePdf?: boolean;
+    };
+  } | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [previewThemes, setPreviewThemes] = useState<ParsedThemePreview[]>([]);
 
@@ -154,6 +166,7 @@ export default function UploadPage() {
     if (file && file.type === "application/pdf") {
       setSelectedFile(file);
       setError(null);
+      setErrorDetails(null);
       setResult(null);
     } else {
       setError("Please upload a PDF file");
@@ -166,6 +179,7 @@ export default function UploadPage() {
       if (file.type === "application/pdf") {
         setSelectedFile(file);
         setError(null);
+        setErrorDetails(null);
         setResult(null);
       } else {
         setError("Please upload a PDF file");
@@ -178,6 +192,7 @@ export default function UploadPage() {
 
     setIsUploading(true);
     setError(null);
+    setErrorDetails(null);
 
     try {
       const formData = new FormData();
@@ -203,9 +218,13 @@ export default function UploadPage() {
 
       if (!response.ok) {
         setError(data.error?.message || "Upload failed");
-        if (data.error?.details?.parsedThemes !== undefined) {
-          setPreviewThemes([]);
-        }
+        setErrorDetails({
+          errors: data.error?.details?.errors,
+          warnings: data.error?.details?.warnings,
+          parsedThemes: data.error?.details?.parsedThemes,
+          diagnostics: data.error?.details?.diagnostics,
+        });
+        setPreviewThemes([]);
         return;
       }
 
@@ -222,6 +241,7 @@ export default function UploadPage() {
     setSelectedFile(null);
     setResult(null);
     setError(null);
+    setErrorDetails(null);
     setAssignEmail("");
     setAssignName("");
     setPreviewThemes([]);
@@ -344,15 +364,6 @@ export default function UploadPage() {
                     <p className="text-sm text-muted-foreground mt-1">
                       {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                     </p>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setSelectedFile(null);
-                      }}
-                      className="mt-3 text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      Choose a different file
-                    </button>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">
@@ -564,12 +575,95 @@ export default function UploadPage() {
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-3 p-4 bg-destructive/10 text-destructive rounded-xl">
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">Upload Failed</p>
-                <p className="text-sm mt-0.5">{error}</p>
+            <div className="p-4 bg-destructive/10 text-destructive rounded-xl space-y-3">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Upload Failed</p>
+                  <p className="text-sm mt-0.5">{error}</p>
+                </div>
               </div>
+
+              {errorDetails && (
+                <div className="border-t border-destructive/20 pt-3 space-y-2 text-sm">
+                  {errorDetails.parsedThemes !== undefined && (
+                    <p>
+                      <span className="font-medium">Themes found:</span> {errorDetails.parsedThemes}
+                    </p>
+                  )}
+
+                  {errorDetails.errors && errorDetails.errors.length > 0 && (
+                    <div>
+                      <p className="font-medium">Errors:</p>
+                      <ul className="list-disc list-inside ml-2 mt-1">
+                        {errorDetails.errors.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {errorDetails.warnings && errorDetails.warnings.length > 0 && (
+                    <div>
+                      <p className="font-medium">Warnings:</p>
+                      <ul className="list-disc list-inside ml-2 mt-1">
+                        {errorDetails.warnings.map((warn, i) => (
+                          <li key={i}>{warn}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {errorDetails.diagnostics && (
+                    <div className="mt-3 p-3 bg-background/50 rounded-lg border border-destructive/20">
+                      <p className="font-medium mb-2">Diagnostics:</p>
+                      <div className="space-y-1 text-xs">
+                        {errorDetails.diagnostics.isLikelyImagePdf && (
+                          <div className="mb-3 p-2 bg-amber-100 dark:bg-amber-900/30 rounded text-amber-800 dark:text-amber-200">
+                            <p className="font-medium">📄 Image-based PDF Detected</p>
+                            <p className="mt-1">
+                              This PDF appears to be scanned or image-based. The system can only read PDFs with actual text content.
+                            </p>
+                            <p className="mt-2">
+                              <strong>Solution:</strong> Download the original PDF from{" "}
+                              <a
+                                href="https://my.gallup.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline hover:no-underline"
+                              >
+                                my.gallup.com
+                              </a>
+                            </p>
+                          </div>
+                        )}
+                        <p>
+                          <span className="opacity-70">Text extracted:</span>{" "}
+                          {errorDetails.diagnostics.textExtracted ? "Yes" : "No (PDF may be image-based)"}
+                        </p>
+                        <p>
+                          <span className="opacity-70">Characters found:</span>{" "}
+                          {errorDetails.diagnostics.textLength.toLocaleString()}
+                        </p>
+                        {errorDetails.diagnostics.participantName && (
+                          <p>
+                            <span className="opacity-70">Participant detected:</span>{" "}
+                            {errorDetails.diagnostics.participantName}
+                          </p>
+                        )}
+                        {errorDetails.diagnostics.textPreview && (
+                          <div className="mt-2">
+                            <p className="opacity-70">Text preview:</p>
+                            <p className="mt-1 p-2 bg-muted/50 rounded text-[10px] font-mono break-all">
+                              {errorDetails.diagnostics.textPreview}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

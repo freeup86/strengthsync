@@ -43,6 +43,7 @@ import {
   Check,
   AlertCircle,
   KeyRound,
+  Upload,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
@@ -419,6 +420,12 @@ export default function AdminMembersPage() {
           <Button variant="outline" onClick={fetchMembers}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/admin/import">
+              <Upload className="h-4 w-4 mr-2" />
+              Bulk Import
+            </Link>
           </Button>
           <Button onClick={() => { resetAddMemberModal(); setAddMemberOpen(true); }}>
             <UserPlus className="h-4 w-4 mr-2" />

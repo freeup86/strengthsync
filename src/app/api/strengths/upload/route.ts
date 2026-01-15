@@ -45,10 +45,27 @@ export async function POST(request: NextRequest) {
     // Validate
     const validation = validateParsedReport(parsed);
     if (!validation.valid) {
-      return apiError(ApiErrorCode.VALIDATION_ERROR, "Failed to parse valid strengths data", {
+      // Include diagnostic info for debugging
+      const textLength = parsed.rawText?.length || 0;
+      const textPreview = parsed.rawText?.substring(0, 200)?.replace(/\s+/g, ' ').trim() || '';
+
+      // Check if PDF appears to be image-based (very little text extracted)
+      const isLikelyImagePdf = textLength < 500;
+      const errorMessage = isLikelyImagePdf
+        ? "This PDF appears to be scanned/image-based. Please use the original digital PDF from Gallup's website (my.gallup.com)."
+        : "Failed to parse valid strengths data";
+
+      return apiError(ApiErrorCode.VALIDATION_ERROR, errorMessage, {
         errors: validation.errors,
         warnings: validation.warnings,
         parsedThemes: parsed.themes.length,
+        diagnostics: {
+          textExtracted: textLength > 0,
+          textLength,
+          textPreview: textPreview.length > 0 ? `${textPreview}...` : '(only whitespace/formatting characters)',
+          participantName: parsed.participantName,
+          isLikelyImagePdf,
+        },
       });
     }
 

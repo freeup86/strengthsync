@@ -235,18 +235,31 @@ export async function parseCliftonStrengthsPDF(buffer: Buffer): Promise<ParsedSt
 
   const text = data.text;
 
+  // Debug logging
+  console.log("[PDF Parser] Extracted text length:", text.length);
+  console.log("[PDF Parser] Text preview (first 500 chars):", text.substring(0, 500));
+
   // Extract data
   const participantName = extractParticipantName(text);
   const themes = extractThemes(text);
+
+  console.log("[PDF Parser] Extracted participant name:", participantName);
+  console.log("[PDF Parser] Extracted themes count:", themes.length);
+  console.log("[PDF Parser] Extracted themes:", themes.map(t => t.name));
+
   const reportType = determineReportType(themes.length);
   const confidence = calculateConfidence(themes);
+
+  // Include truncated rawText for diagnostics (full text only in development)
+  const includeFullText = process.env.NODE_ENV === "development";
+  const rawTextForDiagnostics = includeFullText ? text : text.substring(0, 500);
 
   return {
     participantName,
     themes,
     reportType,
     confidence,
-    rawText: process.env.NODE_ENV === "development" ? text : undefined,
+    rawText: rawTextForDiagnostics,
   };
 }
 

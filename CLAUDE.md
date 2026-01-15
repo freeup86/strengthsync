@@ -50,16 +50,27 @@ docker-compose down      # Stop services
 ### Key Directories
 - `src/app/` - Next.js App Router pages and API routes
 - `src/app/api/` - All API endpoints (auth, team, shoutouts, challenges, etc.)
-- `src/components/` - React components (ui/, layout/, strengths/, team/)
+- `src/components/` - React components organized by domain:
+  - `ui/` - Base components (Button, Card, Dialog, Avatar, Input, etc.)
+  - `layout/` - DashboardLayout (primary navigation wrapper)
+  - `strengths/` - ThemeBadge, StrengthsCard, DomainIcon, analytics components
+  - `team/` - DomainBalanceChart, Partnerships, GapAnalysis
+  - `ai/` - AIEnhanceButton, StreamingText, feedback components
+  - `chat/` - ChatSidebar, ChatHistory, ChatRename
+  - `social/` - Shoutouts, SkillRequests, Feed components
+  - `gamification/` - Badges, Leaderboards, Challenges
+  - `notifications/` - NotificationBell, RecognitionPrompt
 - `src/lib/` - Utilities and services:
   - `prisma.ts` - Database client singleton
-  - `auth/config.ts` - NextAuth configuration
+  - `auth/config.ts` - NextAuth configuration with type augmentations
   - `api/response.ts` - Standardized API response helpers
   - `pdf/parser.ts` - CliftonStrengths PDF parsing
-  - `ai/` - AI service (client, rate-limiter, token-tracker, prompts, tools)
+  - `ai/` - AI service (client, rate-limiter, token-tracker, prompts, context, tools)
   - `email/` - Resend email service and digest templates
   - `strengths/analytics.ts` - Team analytics calculations
-- `src/constants/strengths-data.ts` - All 34 CliftonStrengths themes and 4 domains
+  - `storage/` - S3 file storage service
+- `src/constants/strengths-data.ts` - All 34 CliftonStrengths themes and 4 domains with descriptions, blind spots, keywords
+- `src/types/index.ts` - TypeScript interfaces (SessionUser, MemberProfile, TeamComposition, etc.)
 - `prisma/schema.prisma` - Database schema (source of truth for models)
 
 ### CliftonStrengths Domain Colors
@@ -75,7 +86,7 @@ Each domain color has variants: `DEFAULT`, `-light`, `-dark`, `-muted` (e.g., `b
 ### Multi-Tenant Architecture
 - **Organization**: Contains members, challenges, feed items, review cycles. Has `inviteCode` for member signup.
 - **User**: Can belong to multiple organizations via OrganizationMember
-- **OrganizationMember**: Junction table with role (OWNER/ADMIN/MEMBER), strengths (1-34 ranking), points, badges
+- **OrganizationMember**: Junction table with role (OWNER/ADMIN/MEMBER), status (ACTIVE/INACTIVE/PENDING), strengths (1-34 ranking), points, badges
 - Session contains: `id`, `email`, `name`, `organizationId`, `memberId`, `role`
 - All API routes must verify both `organizationId` and `memberId` from session
 
@@ -84,58 +95,41 @@ Protected routes (require auth): `/dashboard`, `/team`, `/directory`, `/marketpl
 
 Auth routes redirect to dashboard if logged in: `/auth/login`, `/auth/register`
 
-### API Response Pattern
+## API Patterns
+
+### Standardized Response Helpers
 ```typescript
 import { apiSuccess, apiError, ApiErrorCode, apiCreated, apiListSuccess, apiErrors } from '@/lib/api/response';
 
-// Success
-return apiSuccess(data, 'Optional message');
+// Success responses
+return apiSuccess(data, 'Optional message');        // 200 OK
+return apiCreated(newResource);                      // 201 Created
+return apiListSuccess(data, { page, limit, total, hasMore }); // List with pagination
 
-// Created (201)
-return apiCreated(newResource);
-
-// List with pagination
-return apiListSuccess(data, { page, limit, total, hasMore });
-
-// Error (explicit)
+// Error responses (explicit)
 return apiError(ApiErrorCode.NOT_FOUND, 'Resource not found');
+return apiError(ApiErrorCode.VALIDATION_ERROR, 'Invalid input', { field: 'email' });
 
-// Error (convenience helpers)
-return apiErrors.unauthorized();
-return apiErrors.notFound('Member');
-return apiErrors.badRequest('Invalid input', { field: 'email' });
+// Error responses (convenience helpers)
+return apiErrors.unauthorized();      // 401
+return apiErrors.notFound('Member');  // 404
+return apiErrors.badRequest('Invalid input', { field: 'email' }); // 400
+return apiErrors.forbidden();         // 403
+return apiErrors.rateLimited();       // 429
 ```
 
-### Prisma JSON Fields
-When working with Prisma JSON fields (like `progress`, `rules`, `content`), use this pattern:
-```typescript
-// Convert to JSON-safe format before saving
-await prisma.model.create({
-  data: {
-    jsonField: JSON.parse(JSON.stringify(objectData)),
-  },
-});
-```
+### API Error Codes
+| Code | HTTP Status |
+|------|-------------|
+| BAD_REQUEST | 400 |
+| UNAUTHORIZED | 401 |
+| FORBIDDEN | 403 |
+| NOT_FOUND | 404 |
+| VALIDATION_ERROR | 422 |
+| RATE_LIMITED | 429 |
+| INTERNAL_ERROR | 500 |
 
-## Code Standards
-
-1. **NO mock data** - Real database connections only
-2. **NO placeholders** - Every function fully implemented
-3. **NO hardcoded values** - Environment variables only
-4. **Complete error handling** - Production-grade try/catch
-5. **Full validation** - Input validation with Zod
-6. **Security built-in** - Parameterized queries, XSS prevention
-7. **Modal dialogs** - Use `@radix-ui/react-alert-dialog` instead of browser alerts
-8. **Full-stack completeness** - Every backend feature needs frontend UI
-
-## Common Patterns
-
-### Adding a new page
-1. Create `src/app/[route]/page.tsx`
-2. Create `src/app/[route]/layout.tsx` with DashboardLayout wrapper
-3. Add to navigation in `src/components/layout/DashboardLayout.tsx`
-
-### Adding a new API route
+### API Route Template
 ```typescript
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
@@ -186,6 +180,35 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 }
 ```
 
+### Prisma JSON Fields
+When working with Prisma JSON fields (like `progress`, `rules`, `content`), use this pattern:
+```typescript
+// Convert to JSON-safe format before saving
+await prisma.model.create({
+  data: {
+    jsonField: JSON.parse(JSON.stringify(objectData)),
+  },
+});
+```
+
+## Code Standards
+
+1. **NO mock data** - Real database connections only
+2. **NO placeholders** - Every function fully implemented
+3. **NO hardcoded values** - Environment variables only
+4. **Complete error handling** - Production-grade try/catch
+5. **Full validation** - Input validation with Zod
+6. **Security built-in** - Parameterized queries, XSS prevention
+7. **Modal dialogs** - Use `@radix-ui/react-alert-dialog` instead of browser alerts
+8. **Full-stack completeness** - Every backend feature needs frontend UI
+
+## Common Patterns
+
+### Adding a new page
+1. Create `src/app/[route]/page.tsx`
+2. Create `src/app/[route]/layout.tsx` with DashboardLayout wrapper
+3. Add to navigation in `src/components/layout/DashboardLayout.tsx`
+
 ### Using theme/domain colors
 ```tsx
 import { ThemeBadge } from "@/components/strengths/ThemeBadge";
@@ -213,6 +236,19 @@ const member = await prisma.organizationMember.findFirst({
     },
   },
 });
+
+// Fetch all organization members with strengths
+const members = await prisma.organizationMember.findMany({
+  where: { organizationId, status: "ACTIVE" },
+  include: {
+    user: { select: { fullName: true, avatarUrl: true, jobTitle: true } },
+    strengths: {
+      where: { isTop5: true },
+      include: { theme: { include: { domain: true } } },
+      orderBy: { rank: "asc" },
+    },
+  },
+});
 ```
 
 ### Points System
@@ -224,6 +260,37 @@ const member = await prisma.organizationMember.findFirst({
 | Response accepted | +25 |
 | Complete challenge | +50 |
 | Comment on feed | +2 |
+
+### Creating Notifications
+```typescript
+await prisma.notification.create({
+  data: {
+    type: "SHOUTOUT_RECEIVED", // or MENTORSHIP_ACCEPTED, BADGE_EARNED, etc.
+    title: "You received a shoutout!",
+    message: `${senderName} recognized your ${themeName} strength`,
+    memberId: recipientMemberId,
+    link: `/shoutouts/${shoutoutId}`,
+  },
+});
+```
+
+### Creating Feed Items
+```typescript
+await prisma.feedItem.create({
+  data: {
+    type: "SHOUTOUT", // or SKILL_REQUEST, BADGE_EARNED, CHALLENGE_STARTED, etc.
+    content: JSON.parse(JSON.stringify({
+      senderId: memberId,
+      senderName,
+      recipientName,
+      message,
+      themeName,
+    })),
+    organizationId,
+    actorId: memberId,
+  },
+});
+```
 
 ## Path Aliases
 
@@ -288,8 +355,9 @@ return result.toDataStreamResponse();
 
 Frontend uses `useChat` hook from `@ai-sdk/react` for streaming responses.
 
-### AI Features
+### AI Endpoints
 Located in `src/app/api/ai/`:
+- `chat` - General strengths coaching chat with conversation persistence
 - `enhance-shoutout` - Improve shoutout messages
 - `generate-bio` - Create strength-based bios
 - `recognition-starters` / `recognition-prompts` - Suggest recognition text
@@ -302,7 +370,6 @@ Located in `src/app/api/ai/`:
 - `goals/suggest` - Suggest performance review goals
 - `improve-skill-request` - Enhance skill request descriptions
 - `executive-summary` - Generate team executive summaries
-- `chat` - General strengths coaching chat with conversation persistence
 
 AI usage is tracked in `AIUsageLog` table with token counts and costs.
 

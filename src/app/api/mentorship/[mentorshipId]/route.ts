@@ -154,17 +154,17 @@ export async function PATCH(
       },
       include: {
         mentor: {
-          include: { user: { select: { fullName: true } } },
+          include: { user: { select: { id: true, fullName: true } } },
         },
         mentee: {
-          include: { user: { select: { fullName: true } } },
+          include: { user: { select: { id: true, fullName: true } } },
         },
       },
     });
 
     // Create notification for the other party
-    const notifyUserId = isMentor ? mentorship.mentee.user.id : mentorship.mentor.user.id;
-    const actorName = isMentor ? mentorship.mentor.user.fullName : mentorship.mentee.user.fullName;
+    const notifyUserId = isMentor ? updated.mentee.user.id : updated.mentor.user.id;
+    const actorName = isMentor ? updated.mentor.user.fullName : updated.mentee.user.fullName;
 
     const notificationConfig: Record<string, { type: "MENTORSHIP_ACCEPTED" | "MENTORSHIP_DECLINED" | "SYSTEM"; title: string; message: string }> = {
       accept: {
