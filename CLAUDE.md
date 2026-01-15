@@ -91,7 +91,7 @@ Each domain color has variants: `DEFAULT`, `-light`, `-dark`, `-muted` (e.g., `b
 - All API routes must verify both `organizationId` and `memberId` from session
 
 ### Route Protection
-Protected routes (require auth): `/dashboard`, `/team`, `/directory`, `/marketplace`, `/mentorship`, `/shoutouts`, `/challenges`, `/cards`, `/leaderboard`, `/feed`, `/settings`, `/admin`, `/notifications`, `/partnerships`, `/reviews`
+Protected routes (require auth): `/dashboard`, `/strengths`, `/team`, `/directory`, `/marketplace`, `/mentorship`, `/shoutouts`, `/challenges`, `/cards`, `/leaderboard`, `/feed`, `/settings`, `/admin`, `/notifications`, `/partnerships`, `/reviews`
 
 Auth routes redirect to dashboard if logged in: `/auth/login`, `/auth/register`
 
