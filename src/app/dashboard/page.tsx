@@ -184,20 +184,10 @@ export default function DashboardPage() {
             Here&apos;s what&apos;s happening with your team today.
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={fetchDashboardData} size="sm">
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          {isAdmin && (
-            <Button variant="executing" asChild>
-              <Link href="/admin/upload">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Strengths
-              </Link>
-            </Button>
-          )}
-        </div>
+        <Button variant="outline" onClick={fetchDashboardData} size="sm">
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Stats cards */}

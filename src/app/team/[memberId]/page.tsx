@@ -28,7 +28,6 @@ import {
   Link2,
   Quote,
   CheckSquare,
-  Info,
 } from "lucide-react";
 import Link from "next/link";
 import type { DomainSlug } from "@/constants/strengths-data";
@@ -221,21 +220,6 @@ export default function MemberProfilePage() {
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back
       </Button>
-
-      {/* Limited profile banner - shown when viewing another member's profile without full access */}
-      {!member.isFullProfile && (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-              Limited Profile View
-            </p>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              You&apos;re viewing basic profile information. Only admins can see full details including all strengths, shoutouts, and badges.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Profile header */}
       <Card className="overflow-hidden">
