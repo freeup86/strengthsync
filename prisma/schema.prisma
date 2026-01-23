@@ -162,6 +162,7 @@ model OrganizationMember {
 enum MemberRole {
   OWNER
   ADMIN
+  MANAGER
   MEMBER
 }
 

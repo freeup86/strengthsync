@@ -119,7 +119,7 @@ declare module "next-auth" {
       organizationId?: string;
       organizationName?: string;
       memberId?: string;
-      role?: "OWNER" | "ADMIN" | "MEMBER";
+      role?: "OWNER" | "ADMIN" | "MANAGER" | "MEMBER";
     };
   }
 
@@ -131,7 +131,7 @@ declare module "next-auth" {
     organizationId?: string;
     organizationName?: string;
     memberId?: string;
-    role?: "OWNER" | "ADMIN" | "MEMBER";
+    role?: "OWNER" | "ADMIN" | "MANAGER" | "MEMBER";
   }
 }
 
@@ -141,6 +141,6 @@ declare module "next-auth/jwt" {
     organizationId?: string;
     organizationName?: string;
     memberId?: string;
-    role?: "OWNER" | "ADMIN" | "MEMBER";
+    role?: "OWNER" | "ADMIN" | "MANAGER" | "MEMBER";
   }
 }

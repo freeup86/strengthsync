@@ -96,7 +96,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = session?.user?.role === "OWNER" || session?.user?.role === "ADMIN";
+  // Role-based access flags
+  const role = session?.user?.role;
+  const isAdmin = role === "OWNER" || role === "ADMIN";
+  const isManagerOrAbove = role === "OWNER" || role === "ADMIN" || role === "MANAGER";
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -180,8 +183,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           ))}
 
-          {/* Manager section */}
-          {isAdmin && (
+          {/* Manager section - visible to OWNER, ADMIN, and MANAGER */}
+          {isManagerOrAbove && (
             <>
               <div className="px-3 pt-4 pb-2">
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -212,7 +215,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </>
           )}
 
-          {/* Admin section */}
+          {/* Admin section - visible to OWNER and ADMIN only (not MANAGER) */}
           {isAdmin && (
             <>
               <div className="px-3 pt-4 pb-2">
