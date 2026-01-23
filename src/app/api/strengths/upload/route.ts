@@ -12,11 +12,6 @@ export async function POST(request: NextRequest) {
       return apiError(ApiErrorCode.UNAUTHORIZED, "Authentication required");
     }
 
-    // Check admin permissions
-    if (session.user.role !== "OWNER" && session.user.role !== "ADMIN") {
-      return apiError(ApiErrorCode.FORBIDDEN, "Admin access required");
-    }
-
     if (!session.user.organizationId || !session.user.memberId) {
       return apiError(ApiErrorCode.BAD_REQUEST, "Organization membership required");
     }
@@ -26,6 +21,17 @@ export async function POST(request: NextRequest) {
     const forMemberId = formData.get("forMemberId") as string | null;
     const forUserEmail = formData.get("forUserEmail") as string | null;
     const forUserName = formData.get("forUserName") as string | null;
+    const selfUpload = formData.get("selfUpload") === "true";
+
+    // Permission check:
+    // - Self-upload: Any authenticated user can upload their own strengths
+    // - Upload for others: Requires OWNER or ADMIN role
+    const isAdmin = session.user.role === "OWNER" || session.user.role === "ADMIN";
+    const isUploadingForOthers = !selfUpload && (forMemberId || forUserEmail);
+
+    if (isUploadingForOthers && !isAdmin) {
+      return apiError(ApiErrorCode.FORBIDDEN, "Admin access required to upload for other members");
+    }
 
     if (!file) {
       return apiError(ApiErrorCode.BAD_REQUEST, "PDF file required");
@@ -84,8 +90,17 @@ export async function POST(request: NextRequest) {
     // Determine target member
     let targetMember = null;
 
-    if (forMemberId) {
-      // Assign to specific member
+    if (selfUpload) {
+      // Self-upload: assign to current user
+      targetMember = await prisma.organizationMember.findFirst({
+        where: {
+          id: session.user.memberId,
+          organizationId: session.user.organizationId,
+        },
+        include: { user: true },
+      });
+    } else if (forMemberId) {
+      // Assign to specific member (admin only)
       targetMember = await prisma.organizationMember.findFirst({
         where: {
           id: forMemberId,

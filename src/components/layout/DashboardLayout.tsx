@@ -81,6 +81,7 @@ const managerNavigation = [
 
 const adminNavigation = [
   { name: "Members", href: "/admin/members", icon: UserCog },
+  { name: "Upload Strengths", href: "/admin/upload", icon: Upload },
   { name: "Bulk Import", href: "/admin/import", icon: UserPlus },
   { name: "Strength Constants", href: "/admin/constants", icon: Database },
 ];
@@ -291,16 +292,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Settings className="h-4 w-4" />
                   Settings
                 </Link>
-                {isAdmin && (
-                  <Link
-                    href="/admin/upload"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Upload Strengths
-                  </Link>
-                )}
+                <Link
+                  href="/strengths/upload"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Strengths
+                </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted text-destructive"

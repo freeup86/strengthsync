@@ -8,7 +8,7 @@ import { generateTempPassword } from "@/lib/utils";
 import { z } from "zod";
 
 const updateMemberSchema = z.object({
-  role: z.enum(["OWNER", "ADMIN", "MEMBER"]).optional(),
+  role: z.enum(["OWNER", "ADMIN", "MANAGER", "MEMBER"]).optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "PENDING"]).optional(),
 });
 
@@ -64,12 +64,12 @@ export async function PATCH(
     // Role change restrictions
     if (newRole) {
       if (role !== "OWNER") {
-        // Admins can only promote to MEMBER or demote to MEMBER
-        if (newRole === "OWNER" || newRole === "ADMIN") {
-          return apiError(ApiErrorCode.FORBIDDEN, "Only owners can assign admin roles");
+        // Admins can only promote to MEMBER or demote to MEMBER (not MANAGER, ADMIN, or OWNER)
+        if (newRole === "OWNER" || newRole === "ADMIN" || newRole === "MANAGER") {
+          return apiError(ApiErrorCode.FORBIDDEN, "Only owners can assign manager or admin roles");
         }
-        if (member.role === "OWNER" || member.role === "ADMIN") {
-          return apiError(ApiErrorCode.FORBIDDEN, "Only owners can modify admin members");
+        if (member.role === "OWNER" || member.role === "ADMIN" || member.role === "MANAGER") {
+          return apiError(ApiErrorCode.FORBIDDEN, "Only owners can modify manager or admin members");
         }
       }
 

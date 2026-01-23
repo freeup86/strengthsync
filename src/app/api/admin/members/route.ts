@@ -126,7 +126,7 @@ const createMemberSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters"),
   jobTitle: z.string().optional(),
   department: z.string().optional(),
-  role: z.enum(["MEMBER", "ADMIN"]).default("MEMBER"),
+  role: z.enum(["MEMBER", "MANAGER", "ADMIN"]).default("MEMBER"),
 });
 
 export async function POST(request: NextRequest) {
@@ -161,9 +161,9 @@ export async function POST(request: NextRequest) {
     const { email, fullName, jobTitle, department, role } = validation.data;
     const normalizedEmail = email.toLowerCase();
 
-    // Only owners can add admins
-    if (role === "ADMIN" && userRole !== "OWNER") {
-      return apiError(ApiErrorCode.FORBIDDEN, "Only owners can add admin members");
+    // Only owners can add admins or managers
+    if ((role === "ADMIN" || role === "MANAGER") && userRole !== "OWNER") {
+      return apiError(ApiErrorCode.FORBIDDEN, "Only owners can add admin or manager members");
     }
 
     // Check if user already exists

@@ -94,6 +94,13 @@ function getRoleBadge(role: string) {
           Admin
         </span>
       );
+    case "MANAGER":
+      return (
+        <span className="flex items-center gap-1 text-xs font-medium text-domain-strategic bg-domain-strategic-light dark:bg-domain-strategic/20 dark:text-domain-strategic-muted px-2 py-0.5 rounded-full">
+          <Users className="h-3 w-3" />
+          Manager
+        </span>
+      );
     default:
       return (
         <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
@@ -153,7 +160,7 @@ export default function AdminMembersPage() {
     fullName: "",
     jobTitle: "",
     department: "",
-    role: "MEMBER" as "MEMBER" | "ADMIN",
+    role: "MEMBER" as "MEMBER" | "MANAGER" | "ADMIN",
   });
   const [addMemberLoading, setAddMemberLoading] = useState(false);
   const [addMemberError, setAddMemberError] = useState<string | null>(null);
@@ -563,22 +570,58 @@ export default function AdminMembersPage() {
                             <DropdownMenuContent align="end" className="w-48">
                               {/* Role options - only owners can change roles */}
                               {isOwner && member.role === "MEMBER" && (
-                                <DropdownMenuItem
-                                  onClick={() => handleRoleChange(member.id, "ADMIN")}
-                                  disabled={processing}
-                                >
-                                  <ChevronUp className="h-4 w-4 mr-2" />
-                                  Promote to Admin
-                                </DropdownMenuItem>
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => handleRoleChange(member.id, "MANAGER")}
+                                    disabled={processing}
+                                  >
+                                    <ChevronUp className="h-4 w-4 mr-2" />
+                                    Promote to Manager
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleRoleChange(member.id, "ADMIN")}
+                                    disabled={processing}
+                                  >
+                                    <ChevronUp className="h-4 w-4 mr-2" />
+                                    Promote to Admin
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              {isOwner && member.role === "MANAGER" && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => handleRoleChange(member.id, "ADMIN")}
+                                    disabled={processing}
+                                  >
+                                    <ChevronUp className="h-4 w-4 mr-2" />
+                                    Promote to Admin
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleRoleChange(member.id, "MEMBER")}
+                                    disabled={processing}
+                                  >
+                                    <ChevronDown className="h-4 w-4 mr-2" />
+                                    Demote to Member
+                                  </DropdownMenuItem>
+                                </>
                               )}
                               {isOwner && member.role === "ADMIN" && (
-                                <DropdownMenuItem
-                                  onClick={() => handleRoleChange(member.id, "MEMBER")}
-                                  disabled={processing}
-                                >
-                                  <ChevronDown className="h-4 w-4 mr-2" />
-                                  Demote to Member
-                                </DropdownMenuItem>
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => handleRoleChange(member.id, "MANAGER")}
+                                    disabled={processing}
+                                  >
+                                    <ChevronDown className="h-4 w-4 mr-2" />
+                                    Demote to Manager
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleRoleChange(member.id, "MEMBER")}
+                                    disabled={processing}
+                                  >
+                                    <ChevronDown className="h-4 w-4 mr-2" />
+                                    Demote to Member
+                                  </DropdownMenuItem>
+                                </>
                               )}
 
                               {/* Status options */}
@@ -794,30 +837,43 @@ export default function AdminMembersPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Role</label>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
                       name="role"
                       value="MEMBER"
                       checked={addMemberForm.role === "MEMBER"}
-                      onChange={(e) => setAddMemberForm({ ...addMemberForm, role: e.target.value as "MEMBER" | "ADMIN" })}
+                      onChange={(e) => setAddMemberForm({ ...addMemberForm, role: e.target.value as "MEMBER" | "MANAGER" | "ADMIN" })}
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-sm">Member</span>
                   </label>
                   {isOwner && (
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="role"
-                        value="ADMIN"
-                        checked={addMemberForm.role === "ADMIN"}
-                        onChange={(e) => setAddMemberForm({ ...addMemberForm, role: e.target.value as "MEMBER" | "ADMIN" })}
-                        className="w-4 h-4 text-primary"
-                      />
-                      <span className="text-sm">Admin</span>
-                    </label>
+                    <>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="role"
+                          value="MANAGER"
+                          checked={addMemberForm.role === "MANAGER"}
+                          onChange={(e) => setAddMemberForm({ ...addMemberForm, role: e.target.value as "MEMBER" | "MANAGER" | "ADMIN" })}
+                          className="w-4 h-4 text-primary"
+                        />
+                        <span className="text-sm">Manager</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="role"
+                          value="ADMIN"
+                          checked={addMemberForm.role === "ADMIN"}
+                          onChange={(e) => setAddMemberForm({ ...addMemberForm, role: e.target.value as "MEMBER" | "MANAGER" | "ADMIN" })}
+                          className="w-4 h-4 text-primary"
+                        />
+                        <span className="text-sm">Admin</span>
+                      </label>
+                    </>
                   )}
                 </div>
               </div>
