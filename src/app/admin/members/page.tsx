@@ -591,7 +591,7 @@ export default function AdminMembersPage() {
                                   Deactivate
                                 </DropdownMenuItem>
                               )}
-                              {member.status === "INACTIVE" && (
+                              {(member.status === "INACTIVE" || member.status === "PENDING") && (
                                 <DropdownMenuItem
                                   onClick={() => handleStatusChange(member.id, "ACTIVE")}
                                   disabled={processing}
