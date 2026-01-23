@@ -28,6 +28,7 @@ import {
   Link2,
   Quote,
   CheckSquare,
+  Info,
 } from "lucide-react";
 import Link from "next/link";
 import type { DomainSlug } from "@/constants/strengths-data";
@@ -37,9 +38,12 @@ interface MemberProfile {
   id: string;
   title: string | null;
   department: string | null;
-  points: number;
-  currentStreak: number;
-  joinedAt: string;
+  // Stats are only present for full profile view
+  points?: number;
+  currentStreak?: number;
+  joinedAt?: string;
+  // Flag indicating access level
+  isFullProfile: boolean;
   user: {
     name: string;
     email: string;
@@ -48,21 +52,20 @@ interface MemberProfile {
   strengths: {
     id: string;
     rank: number;
-    personalizedDescription: string | null;
-    // NEW: Array of personalized insight paragraphs
+    // Personalized data only present for full profile view
+    personalizedDescription?: string | null;
     personalizedInsights?: string[];
-    // NEW: How this strength blends with other Top 5 themes
     strengthBlends?: StrengthBlend[] | null;
-    // NEW: Apply section with tagline and action items
     applySection?: ApplySection | null;
     theme: {
       slug: string;
       name: string;
       shortDescription: string;
-      fullDescription: string;
-      blindSpots: string[];
-      actionItems: string[];
-      worksWith: string[];
+      // Detailed theme info only present for full profile view
+      fullDescription?: string;
+      blindSpots?: string[];
+      actionItems?: string[];
+      worksWith?: string[];
       domain: {
         slug: string;
         name: string;
@@ -219,6 +222,21 @@ export default function MemberProfilePage() {
         Back
       </Button>
 
+      {/* Limited profile banner - shown when viewing another member's profile without full access */}
+      {!member.isFullProfile && (
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              Limited Profile View
+            </p>
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              You&apos;re viewing basic profile information. Only admins can see full details including all strengths, shoutouts, and badges.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Profile header */}
       <Card className="overflow-hidden">
         <div
@@ -271,27 +289,29 @@ export default function MemberProfilePage() {
                 )}
               </div>
 
-              {/* Stats */}
-              <div className="flex flex-wrap gap-6 mt-4 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-amber-500" />
-                  <span className="text-sm">
-                    <span className="font-bold">{member.points}</span> points
-                  </span>
+              {/* Stats - only visible for full profile view */}
+              {member.isFullProfile && member.points !== undefined && (
+                <div className="flex flex-wrap gap-6 mt-4 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm">
+                      <span className="font-bold">{member.points}</span> points
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-domain-executing" />
+                    <span className="text-sm">
+                      <span className="font-bold">{member.currentStreak}</span> day streak
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      Joined {new Date(member.joinedAt!).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-domain-executing" />
-                  <span className="text-sm">
-                    <span className="font-bold">{member.currentStreak}</span> day streak
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    Joined {new Date(member.joinedAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -314,11 +334,16 @@ export default function MemberProfilePage() {
                 <div className="space-y-4">
                   {member.strengths.slice(0, 5).map((strength) => {
                     const isExpanded = expandedStrengths.has(strength.id);
-                    const hasDetails =
+                    // Only show expandable details for full profile view
+                    const hasDetails = member.isFullProfile && (
                       strength.theme.fullDescription ||
-                      strength.theme.blindSpots.length > 0 ||
-                      strength.theme.actionItems.length > 0 ||
-                      strength.theme.worksWith.length > 0;
+                      (strength.theme.blindSpots && strength.theme.blindSpots.length > 0) ||
+                      (strength.theme.actionItems && strength.theme.actionItems.length > 0) ||
+                      (strength.theme.worksWith && strength.theme.worksWith.length > 0) ||
+                      strength.personalizedInsights?.length ||
+                      strength.strengthBlends?.length ||
+                      strength.applySection
+                    );
 
                     return (
                       <div
@@ -327,7 +352,7 @@ export default function MemberProfilePage() {
                       >
                         <button
                           onClick={() => hasDetails && toggleStrengthExpansion(strength.id)}
-                          className="flex items-start gap-4 p-4 w-full text-left"
+                          className={`flex items-start gap-4 p-4 w-full text-left ${!hasDetails ? 'cursor-default' : ''}`}
                           disabled={!hasDetails}
                         >
                           <span className="text-2xl font-bold text-muted-foreground w-8">
@@ -469,7 +494,7 @@ export default function MemberProfilePage() {
                             )}
 
                             {/* Blind Spots */}
-                            {strength.theme.blindSpots.length > 0 && (
+                            {strength.theme.blindSpots && strength.theme.blindSpots.length > 0 && (
                               <div>
                                 <div className="flex items-center gap-2 text-sm font-medium mb-2">
                                   <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -490,7 +515,7 @@ export default function MemberProfilePage() {
                             )}
 
                             {/* Generic Action Items - only show if no personalized apply section */}
-                            {(!strength.applySection || strength.applySection.actionItems.length === 0) && strength.theme.actionItems.length > 0 && (
+                            {(!strength.applySection || strength.applySection.actionItems.length === 0) && strength.theme.actionItems && strength.theme.actionItems.length > 0 && (
                               <div>
                                 <div className="flex items-center gap-2 text-sm font-medium mb-2">
                                   <Lightbulb className="h-4 w-4 text-domain-strategic" />
@@ -511,7 +536,7 @@ export default function MemberProfilePage() {
                             )}
 
                             {/* Works Well With - only show if no blends section */}
-                            {(!strength.strengthBlends || strength.strengthBlends.length === 0) && strength.theme.worksWith.length > 0 && (
+                            {(!strength.strengthBlends || strength.strengthBlends.length === 0) && strength.theme.worksWith && strength.theme.worksWith.length > 0 && (
                               <div>
                                 <div className="flex items-center gap-2 text-sm font-medium mb-2">
                                   <UserPlus className="h-4 w-4 text-domain-relationship" />
@@ -547,8 +572,8 @@ export default function MemberProfilePage() {
             </CardContent>
           </Card>
 
-          {/* All strengths (if more than 5) */}
-          {member.strengths.length > 5 && (
+          {/* All strengths (if more than 5) - only visible for full profile view */}
+          {member.isFullProfile && member.strengths.length > 5 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -579,68 +604,70 @@ export default function MemberProfilePage() {
             </Card>
           )}
 
-          {/* Recent Shoutouts Received */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquarePlus className="h-5 w-5 text-domain-influencing" />
-                Shoutouts Received
-              </CardTitle>
-              <CardDescription>Recognition from teammates</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {member.shoutoutsReceived.length > 0 ? (
-                <div className="space-y-4">
-                  {member.shoutoutsReceived.slice(0, 5).map((shoutout) => (
-                    <div
-                      key={shoutout.id}
-                      className="flex items-start gap-4 p-4 rounded-xl bg-muted/30"
-                    >
-                      <Avatar>
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {getInitials(shoutout.giver.user.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium">{shoutout.giver.user.name}</span>
-                          {shoutout.theme && (
-                            <ThemeBadge
-                              themeName={shoutout.theme.name}
-                              domainSlug={shoutout.theme.domain.slug as DomainSlug}
-                              size="sm"
-                            />
-                          )}
+          {/* Recent Shoutouts Received - only visible for full profile view */}
+          {member.isFullProfile && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquarePlus className="h-5 w-5 text-domain-influencing" />
+                  Shoutouts Received
+                </CardTitle>
+                <CardDescription>Recognition from teammates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {member.shoutoutsReceived.length > 0 ? (
+                  <div className="space-y-4">
+                    {member.shoutoutsReceived.slice(0, 5).map((shoutout) => (
+                      <div
+                        key={shoutout.id}
+                        className="flex items-start gap-4 p-4 rounded-xl bg-muted/30"
+                      >
+                        <Avatar>
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {getInitials(shoutout.giver.user.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium">{shoutout.giver.user.name}</span>
+                            {shoutout.theme && (
+                              <ThemeBadge
+                                themeName={shoutout.theme.name}
+                                domainSlug={shoutout.theme.domain.slug as DomainSlug}
+                                size="sm"
+                              />
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {shoutout.message}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {new Date(shoutout.createdAt).toLocaleDateString()}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {shoutout.message}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {new Date(shoutout.createdAt).toLocaleDateString()}
-                        </p>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <MessageSquarePlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h4 className="font-medium">No Shoutouts Yet</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Be the first to recognize {member.user.name.split(" ")[0]}!
-                  </p>
-                  {!isOwnProfile && (
-                    <Button variant="influencing" className="mt-4" asChild>
-                      <Link href={`/shoutouts/create?to=${member.id}`}>
-                        <MessageSquarePlus className="h-4 w-4 mr-2" />
-                        Give Shoutout
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageSquarePlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="font-medium">No Shoutouts Yet</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Be the first to recognize {member.user.name.split(" ")[0]}!
+                    </p>
+                    {!isOwnProfile && (
+                      <Button variant="influencing" className="mt-4" asChild>
+                        <Link href={`/shoutouts/create?to=${member.id}`}>
+                          <MessageSquarePlus className="h-4 w-4 mr-2" />
+                          Give Shoutout
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -696,36 +723,38 @@ export default function MemberProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Badges */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Badges Earned</CardTitle>
-              <CardDescription>{member.badgesEarned.length} achievements</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {member.badgesEarned.length > 0 ? (
-                <div className="grid grid-cols-3 gap-3">
-                  {member.badgesEarned.map((badge) => (
-                    <div
-                      key={badge.id}
-                      className="flex flex-col items-center text-center p-2"
-                      title={badge.badge.description}
-                    >
-                      <span className="text-2xl mb-1">{badge.badge.icon}</span>
-                      <span className="text-xs font-medium line-clamp-2">
-                        {badge.badge.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <Trophy className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No badges yet</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Badges - only visible for full profile view */}
+          {member.isFullProfile && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Badges Earned</CardTitle>
+                <CardDescription>{member.badgesEarned.length} achievements</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {member.badgesEarned.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {member.badgesEarned.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="flex flex-col items-center text-center p-2"
+                        title={badge.badge.description}
+                      >
+                        <span className="text-2xl mb-1">{badge.badge.icon}</span>
+                        <span className="text-xs font-medium line-clamp-2">
+                          {badge.badge.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <Trophy className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No badges yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick actions */}
           {!isOwnProfile && (

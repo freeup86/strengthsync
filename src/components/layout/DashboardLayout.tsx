@@ -74,12 +74,14 @@ const navigationSections = [
   },
 ];
 
-const adminNavigation = [
+const managerNavigation = [
   { name: "Manager Dashboard", href: "/admin/dashboard", icon: BarChart3 },
-  { name: "Review Cycles", href: "/admin/review-cycles", icon: ClipboardList },
+  { name: "Performance Reviews", href: "/admin/review-cycles", icon: ClipboardList },
+];
+
+const adminNavigation = [
   { name: "Members", href: "/admin/members", icon: UserCog },
   { name: "Bulk Import", href: "/admin/import", icon: UserPlus },
-  { name: "Upload Strengths", href: "/admin/upload", icon: Upload },
   { name: "Strength Constants", href: "/admin/constants", icon: Database },
 ];
 
@@ -178,6 +180,38 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           ))}
 
+          {/* Manager section */}
+          {isAdmin && (
+            <>
+              <div className="px-3 pt-4 pb-2">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Manager
+                </span>
+              </div>
+              <div className="space-y-1">
+                {managerNavigation.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-soft dark:shadow-soft-dark"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
           {/* Admin section */}
           {isAdmin && (
             <>
@@ -254,6 +288,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Settings className="h-4 w-4" />
                   Settings
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin/upload"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload Strengths
+                  </Link>
+                )}
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted text-destructive"

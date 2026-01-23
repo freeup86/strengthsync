@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, ApiErrorCode } from "@/lib/api/response";
+import { canViewFullProfile } from "@/lib/auth/permissions";
 import type { StrengthBlend, ApplySection } from "@/types";
 
 export async function GET(
@@ -22,7 +23,14 @@ export async function GET(
 
     const { memberId } = await params;
 
-    // Fetch member with all related data
+    // Check permission level for profile viewing
+    const isFullProfile = canViewFullProfile({
+      viewerRole: session.user.role,
+      viewerMemberId: session.user.memberId,
+      targetMemberId: memberId,
+    });
+
+    // Build query based on access level
     const member = await prisma.organizationMember.findFirst({
       where: {
         id: memberId,
@@ -40,6 +48,7 @@ export async function GET(
           },
         },
         strengths: {
+          where: isFullProfile ? undefined : { rank: { lte: 5 } }, // Basic view: top 5 only
           include: {
             theme: {
               include: {
@@ -56,42 +65,6 @@ export async function GET(
             rank: "asc",
           },
         },
-        shoutoutsReceived: {
-          include: {
-            giver: {
-              include: {
-                user: {
-                  select: { fullName: true },
-                },
-              },
-            },
-            theme: {
-              include: {
-                domain: {
-                  select: { slug: true },
-                },
-              },
-            },
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 10,
-        },
-        badgesEarned: {
-          include: {
-            badge: {
-              select: {
-                name: true,
-                description: true,
-                iconUrl: true,
-              },
-            },
-          },
-          orderBy: {
-            earnedAt: "desc",
-          },
-        },
       },
     });
 
@@ -99,44 +72,47 @@ export async function GET(
       return apiError(ApiErrorCode.NOT_FOUND, "Member not found");
     }
 
-    // Format response
-    const response = {
-      id: member.id,
-      title: member.user.jobTitle,
-      department: member.user.department,
-      points: member.points,
-      currentStreak: member.streak,
-      joinedAt: member.joinedAt.toISOString(),
-      user: {
-        name: member.user.fullName || "Unknown",
-        email: member.user.email,
-        image: member.user.avatarUrl,
-      },
-      strengths: member.strengths.map((s) => ({
-        id: s.id,
-        rank: s.rank,
-        personalizedDescription: s.personalizedDescription,
-        // NEW: Include personalized insights array
-        personalizedInsights: s.personalizedInsights || [],
-        // NEW: Include strength blends (cast from Prisma JsonValue)
-        strengthBlends: s.strengthBlends as StrengthBlend[] | null,
-        // NEW: Include apply section (cast from Prisma JsonValue)
-        applySection: s.applySection as ApplySection | null,
-        theme: {
-          slug: s.theme.slug,
-          name: s.theme.name,
-          shortDescription: s.theme.shortDescription,
-          fullDescription: s.theme.fullDescription,
-          blindSpots: s.theme.blindSpots,
-          actionItems: s.theme.actionItems,
-          worksWith: s.theme.worksWith,
-          domain: {
-            slug: s.theme.domain.slug,
-            name: s.theme.domain.name,
+    // For full profile, fetch shoutouts and badges in separate queries
+    // This avoids complex type assertions with conditional includes
+    let shoutoutsReceived: Array<{
+      id: string;
+      message: string;
+      createdAt: string;
+      giver: { user: { name: string } };
+      theme: { name: string; domain: { slug: string } } | null;
+    }> = [];
+
+    let badgesEarned: Array<{
+      id: string;
+      earnedAt: string;
+      badge: { name: string; description: string; icon: string };
+    }> = [];
+
+    if (isFullProfile) {
+      // Fetch shoutouts received
+      const shoutouts = await prisma.shoutout.findMany({
+        where: { receiverId: memberId },
+        include: {
+          giver: {
+            include: {
+              user: {
+                select: { fullName: true },
+              },
+            },
+          },
+          theme: {
+            include: {
+              domain: {
+                select: { slug: true },
+              },
+            },
           },
         },
-      })),
-      shoutoutsReceived: member.shoutoutsReceived.map((s) => ({
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
+
+      shoutoutsReceived = shoutouts.map((s) => ({
         id: s.id,
         message: s.message,
         createdAt: s.createdAt.toISOString(),
@@ -149,8 +125,24 @@ export async function GET(
               domain: { slug: s.theme.domain.slug },
             }
           : null,
-      })),
-      badgesEarned: member.badgesEarned.map((b) => ({
+      }));
+
+      // Fetch badges earned
+      const badges = await prisma.badgeEarned.findMany({
+        where: { memberId },
+        include: {
+          badge: {
+            select: {
+              name: true,
+              description: true,
+              iconUrl: true,
+            },
+          },
+        },
+        orderBy: { earnedAt: "desc" },
+      });
+
+      badgesEarned = badges.map((b) => ({
         id: b.id,
         earnedAt: b.earnedAt.toISOString(),
         badge: {
@@ -158,7 +150,60 @@ export async function GET(
           description: b.badge.description,
           icon: b.badge.iconUrl,
         },
+      }));
+    }
+
+    const response = {
+      id: member.id,
+      title: member.user.jobTitle,
+      department: member.user.department,
+      // Include stats only for full profile view
+      ...(isFullProfile
+        ? {
+            points: member.points,
+            currentStreak: member.streak,
+            joinedAt: member.joinedAt.toISOString(),
+          }
+        : {}),
+      isFullProfile, // Flag for frontend to know what level of access
+      user: {
+        name: member.user.fullName || "Unknown",
+        email: member.user.email,
+        image: member.user.avatarUrl,
+      },
+      strengths: member.strengths.map((s) => ({
+        id: s.id,
+        rank: s.rank,
+        // Include personalized data only for full profile view
+        ...(isFullProfile
+          ? {
+              personalizedDescription: s.personalizedDescription,
+              personalizedInsights: s.personalizedInsights || [],
+              strengthBlends: s.strengthBlends as StrengthBlend[] | null,
+              applySection: s.applySection as ApplySection | null,
+            }
+          : {}),
+        theme: {
+          slug: s.theme.slug,
+          name: s.theme.name,
+          shortDescription: s.theme.shortDescription,
+          // Include detailed theme info only for full profile view
+          ...(isFullProfile
+            ? {
+                fullDescription: s.theme.fullDescription,
+                blindSpots: s.theme.blindSpots,
+                actionItems: s.theme.actionItems,
+                worksWith: s.theme.worksWith,
+              }
+            : {}),
+          domain: {
+            slug: s.theme.domain.slug,
+            name: s.theme.domain.name,
+          },
+        },
       })),
+      shoutoutsReceived,
+      badgesEarned,
     };
 
     return apiSuccess(response);
