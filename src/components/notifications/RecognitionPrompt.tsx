@@ -263,14 +263,18 @@ export function RecognitionPrompt() {
         )}
 
         {state.suggestions.length > 0 && (
-          <div className="space-y-4">
-            {state.suggestions.map((suggestion) => (
-              <SuggestionCard
-                key={suggestion.memberId}
-                suggestion={suggestion}
-                onUseStarter={handleUseStarter}
-              />
-            ))}
+          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+            {state.suggestions
+              .filter((suggestion, index, self) =>
+                self.findIndex((s) => s.memberId === suggestion.memberId) === index
+              )
+              .map((suggestion) => (
+                <SuggestionCard
+                  key={suggestion.memberId}
+                  suggestion={suggestion}
+                  onUseStarter={handleUseStarter}
+                />
+              ))}
 
             <div className="text-center pt-2">
               <Button variant="ghost" size="sm" asChild>

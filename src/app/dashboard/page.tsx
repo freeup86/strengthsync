@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { RecognitionPrompt } from "@/components/notifications/RecognitionPrompt";
 import { ScrollReveal, ScrollRevealGroup } from "@/components/ui/ScrollReveal";
-import { DomainDonutChart } from "@/components/charts/DomainDonutChart";
 import Link from "next/link";
 import {
   Users,
@@ -22,7 +21,6 @@ import {
   Sparkles,
   TrendingUp,
   Target,
-  Upload,
   Zap,
   Handshake,
   RefreshCw,
@@ -61,12 +59,12 @@ interface DashboardData {
 
 const WELCOME_STEPS = [
   {
-    title: "Upload Team Strengths",
-    description: "Import CliftonStrengths reports for your team members",
-    href: "/admin/upload",
-    icon: Upload,
+    title: "View Team Analytics",
+    description: "Explore your team's strengths distribution and insights",
+    href: "/team",
+    icon: TrendingUp,
     color: "executing" as const,
-    adminOnly: true,
+    adminOnly: false,
   },
   {
     title: "Invite Your Team",
@@ -101,28 +99,6 @@ function getInitials(name: string): string {
     .join("")
     .toUpperCase()
     .slice(0, 2);
-}
-
-function calculateDomainDistribution(strengths: DashboardData["myStrengths"]) {
-  const distribution = {
-    executing: 0,
-    influencing: 0,
-    relationship: 0,
-    strategic: 0,
-  };
-
-  strengths.forEach((s) => {
-    if (s.domain in distribution) {
-      distribution[s.domain]++;
-    }
-  });
-
-  return [
-    { domain: "executing" as const, value: distribution.executing, label: "Executing" },
-    { domain: "influencing" as const, value: distribution.influencing, label: "Influencing" },
-    { domain: "relationship" as const, value: distribution.relationship, label: "Relationship" },
-    { domain: "strategic" as const, value: distribution.strategic, label: "Strategic" },
-  ].filter((d) => d.value > 0);
 }
 
 const ONBOARDING_KEY = "strengthsync_onboarding_completed";
@@ -481,93 +457,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Quick actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/shoutouts/create">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Give a Shoutout
-                </Link>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/marketplace/create">
-                  <Target className="h-4 w-4 mr-2" />
-                  Post a Skill Request
-                </Link>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/directory">
-                  <Users className="h-4 w-4 mr-2" />
-                  Find Team Members
-                </Link>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/team">
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  View Team Analytics
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Domain overview */}
-          <ScrollReveal animation="fade-up">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Your Domain Mix</CardTitle>
-                <CardDescription>
-                  {data?.myStrengths && data.myStrengths.length > 0
-                    ? "Distribution of your top 5 strengths"
-                    : "The four categories of CliftonStrengths"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data?.myStrengths && data.myStrengths.length > 0 ? (
-                  <div className="flex flex-col items-center">
-                    <DomainDonutChart
-                      data={calculateDomainDistribution(data.myStrengths.slice(0, 5))}
-                      size={160}
-                      thickness={20}
-                      centerLabel="Top 5"
-                      centerValue={5}
-                      animated
-                    />
-                    <div className="mt-4 grid grid-cols-2 gap-3 w-full">
-                      {calculateDomainDistribution(data.myStrengths.slice(0, 5)).map((d) => (
-                        <div key={d.domain} className="flex items-center gap-2">
-                          <DomainIcon domain={d.domain} size="sm" />
-                          <span className="text-sm">
-                            {d.label}: <strong>{d.value}</strong>
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {[
-                      { domain: "executing" as const, name: "Executing", desc: "Making things happen" },
-                      { domain: "influencing" as const, name: "Influencing", desc: "Taking charge" },
-                      { domain: "relationship" as const, name: "Relationship", desc: "Building bonds" },
-                      { domain: "strategic" as const, name: "Strategic", desc: "Better decisions" },
-                    ].map((d) => (
-                      <div key={d.domain} className="flex items-center gap-3">
-                        <DomainIcon domain={d.domain} size="default" />
-                        <div>
-                          <p className="text-sm font-medium">{d.name}</p>
-                          <p className="text-xs text-muted-foreground">{d.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </ScrollReveal>
         </div>
       </div>
 

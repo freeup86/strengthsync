@@ -36,7 +36,7 @@ npm run db:seed          # Seed domains, themes, badges (npx tsx prisma/seed.ts)
 npm run db:reset         # Reset database (prisma migrate reset)
 npx prisma studio        # Open Prisma Studio (DB GUI)
 
-docker-compose up -d     # Start PostgreSQL and other services
+docker-compose up -d     # Start PostgreSQL
 docker-compose down      # Stop services
 ```
 
@@ -46,7 +46,7 @@ docker-compose down      # Stop services
 
 ### Key Directories
 - `src/app/` - Next.js App Router pages and API routes
-- `src/app/api/` - All API endpoints (auth, team, shoutouts, challenges, etc.)
+- `src/app/api/` - All API endpoints (auth, team, shoutouts, challenges, ai, admin, etc.)
 - `src/components/` - React components organized by domain:
   - `ui/` - Base components (Button, Card, Dialog, Avatar, Input, etc.)
   - `layout/` - DashboardLayout (primary navigation wrapper)
@@ -83,12 +83,29 @@ Each domain color has variants: `-light`, `-dark`, `-muted` (e.g., `bg-domain-ex
 ### Multi-Tenant Architecture
 - **Organization**: Contains members, challenges, feed items, review cycles. Has `inviteCode` for member signup.
 - **User**: Can belong to multiple organizations via OrganizationMember
-- **OrganizationMember**: Junction table with role (OWNER/ADMIN/MEMBER), status (ACTIVE/INACTIVE/PENDING), strengths (1-34 ranking), points, badges
+- **OrganizationMember**: Junction table with role (OWNER/ADMIN/MANAGER/MEMBER), status (ACTIVE/INACTIVE/PENDING), strengths (1-34 ranking), points, badges
 - Session contains: `id`, `email`, `name`, `organizationId`, `memberId`, `role`
 - All API routes must verify both `organizationId` and `memberId` from session
 
-### Route Protection (defined in `src/middleware.ts`)
-**Protected routes** (require auth): `/dashboard`, `/strengths`, `/team`, `/directory`, `/marketplace`, `/mentorship`, `/shoutouts`, `/challenges`, `/cards`, `/leaderboard`, `/feed`, `/settings`, `/admin`, `/notifications`, `/partnerships`, `/reviews`
+### Role-Based Access Control (defined in `src/middleware.ts`)
+
+Four roles with tiered access:
+
+| Role | Access |
+|------|--------|
+| **OWNER** | Full access to all routes including admin |
+| **ADMIN** | Same as OWNER |
+| **MANAGER** | Manager dashboard (`/admin/dashboard`), performance reviews (`/admin/review-cycles`), plus all member routes |
+| **MEMBER** | All non-admin protected routes |
+
+**Admin-only routes** (OWNER/ADMIN — MANAGER cannot access):
+`/admin/members`, `/admin/import`, `/admin/constants`, `/admin/upload`
+
+**Manager routes** (OWNER/ADMIN/MANAGER):
+`/admin/dashboard`, `/admin/review-cycles`
+
+**Protected routes** (all authenticated users):
+`/dashboard`, `/strengths`, `/team`, `/directory`, `/marketplace`, `/mentorship`, `/shoutouts`, `/challenges`, `/cards`, `/leaderboard`, `/feed`, `/settings`, `/admin`, `/notifications`, `/partnerships`, `/reviews`, `/chat`
 
 **Auth routes** redirect to dashboard if logged in: `/auth/login`, `/auth/register`
 
@@ -198,6 +215,16 @@ await prisma.model.create({
 2. Create `src/app/[route]/layout.tsx` with DashboardLayout wrapper
 3. Add to navigation in `src/components/layout/DashboardLayout.tsx`
 
+### Navigation Structure (in `DashboardLayout.tsx`)
+The sidebar is organized into sections:
+- **Primary**: Dashboard
+- **Me**: My Strengths, My Reviews, Mentorship
+- **Team**: Ask AI (`/chat`), Team Analytics, Directory, Leaderboard
+- **Connect**: Feed, Shoutouts, Skill Marketplace, Challenges
+
+Manager-only items (OWNER/ADMIN/MANAGER): Manager Dashboard, Performance Reviews
+Admin-only items (OWNER/ADMIN): Members, Upload Strengths, Bulk Import, Strength Constants
+
 ### Using theme/domain colors
 ```tsx
 import { ThemeBadge } from "@/components/strengths/ThemeBadge";
@@ -302,11 +329,15 @@ OPENAI_API_KEY=sk-...  # Required for AI features
 Optional:
 ```env
 AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET
-REDIS_URL
 RESEND_API_KEY  # For email features
 ```
 
 ## Key Features
+
+### Strengths Upload
+- **Admin upload** (`/admin/upload`): Admins upload CliftonStrengths PDFs for any member
+- **Self-service upload** (`/strengths/upload`): Members upload their own PDF
+- **Bulk import** (`/admin/import`): CSV/bulk member import
 
 ### Strengths Bingo Challenge
 - 5x5 grid stored as JSON in `ChallengeParticipant.progress`
@@ -361,7 +392,7 @@ Frontend uses `useChat` hook from `@ai-sdk/react` for streaming responses.
 | `improve-skill-request` | Enhance skill request descriptions |
 | `executive-summary` | Generate team executive summaries |
 
-AI usage is tracked in `AIUsageLog` table with token counts and costs.
+AI usage is tracked in `AIUsageLog` table with token counts and costs. Admin management via `/api/admin/ai/usage` and `/api/admin/ai/prompts`.
 
 ### AI Conversation Persistence
 Chat conversations are persisted via `AIConversation` and `AIMessage` models:
@@ -387,13 +418,22 @@ Chat conversations are persisted via `AIConversation` and `AIMessage` models:
 
 ## Admin Features
 
-Admin routes (`/admin/*`) require `role: OWNER | ADMIN`. Key admin capabilities:
-- **Members**: View/edit all organization members, import strengths via PDF
-- **Review Cycles**: Create/manage performance review cycles (QUARTERLY, SEMI_ANNUAL, etc.)
-- **AI Prompts**: Manage AI prompt templates (`AIPromptTemplate`)
-- **AI Usage**: Monitor token usage and costs across the organization
-- **Constants**: Edit strength domains and themes (reference data)
-- **Health Metrics**: Dashboard metrics for organization health
+Admin routes (`/admin/*`) have two tiers of access:
+
+**OWNER/ADMIN only:**
+- **Members**: View/edit all organization members (`/admin/members`)
+- **Upload Strengths**: Import strengths via PDF (`/admin/upload`)
+- **Bulk Import**: CSV member import (`/admin/import`)
+- **Constants**: Edit strength domains and themes (`/admin/constants`)
+
+**OWNER/ADMIN/MANAGER:**
+- **Manager Dashboard**: Organization health metrics (`/admin/dashboard`)
+- **Review Cycles**: Create/manage performance review cycles (`/admin/review-cycles`)
+
+**Admin API endpoints:**
+- **AI Prompts**: Manage AI prompt templates (`/admin/ai/prompts`)
+- **AI Usage**: Monitor token usage and costs (`/admin/ai/usage`)
+- **Health Metrics**: Organization health dashboard (`/admin/health-metrics`)
 
 ## NextAuth Session Type
 
@@ -403,11 +443,11 @@ session.user = {
   id: string;           // User ID
   email: string;
   name: string;
-  image?: string;
+  image?: string | null;
   organizationId?: string;  // Current org
   organizationName?: string;
   memberId?: string;    // OrganizationMember ID
-  role?: "OWNER" | "ADMIN" | "MEMBER";
+  role?: "OWNER" | "ADMIN" | "MANAGER" | "MEMBER";
 };
 ```
 
@@ -422,6 +462,6 @@ Type augmentations are defined in `src/lib/auth/config.ts`.
 | `src/lib/api/response.ts` | Standardized API response helpers |
 | `src/lib/prisma.ts` | Prisma client singleton |
 | `src/constants/strengths-data.ts` | All 34 themes, 4 domains, blind spots, keywords |
-| `src/middleware.ts` | Route protection logic |
-| `src/components/layout/DashboardLayout.tsx` | Main navigation wrapper |
+| `src/middleware.ts` | Route protection and role-based access logic |
+| `src/components/layout/DashboardLayout.tsx` | Main navigation wrapper with role-aware sidebar |
 | `tailwind.config.ts` | Domain colors and custom animations |
