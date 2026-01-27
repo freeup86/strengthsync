@@ -32,6 +32,7 @@ import {
   Bot,
   Sparkles,
   UserPlus,
+  FileSpreadsheet,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -83,6 +84,7 @@ const adminNavigation = [
   { name: "Members", href: "/admin/members", icon: UserCog },
   { name: "Upload Strengths", href: "/admin/upload", icon: Upload },
   { name: "Bulk Import", href: "/admin/import", icon: UserPlus },
+  { name: "Excel Import", href: "/admin/excel-import", icon: FileSpreadsheet },
   { name: "Strength Constants", href: "/admin/constants", icon: Database },
 ];
 
@@ -118,10 +120,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Skip to main content link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:z-max focus:top-4 focus:left-4 focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-md"
+      >
+        Skip to main content
+      </a>
+
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-overlay bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -129,7 +139,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 transform bg-card border-r border-border/50 transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col",
+          "fixed inset-y-0 left-0 z-modal w-64 transform bg-card border-r border-border/50 transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -141,6 +151,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <button
             onClick={() => setSidebarOpen(false)}
             className="ml-auto lg:hidden p-1.5 rounded-lg hover:bg-muted"
+            aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
           </button>
@@ -285,20 +296,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   My Card
                 </Link>
                 <Link
-                  href="/settings/profile"
-                  onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted"
-                >
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </Link>
-                <Link
                   href="/strengths/upload"
                   onClick={() => setUserMenuOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted"
                 >
                   <Upload className="h-4 w-4" />
                   Upload Strengths
+                </Link>
+                <Link
+                  href="/settings/profile"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted"
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
@@ -316,12 +327,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main content area */}
       <div className="lg:pl-64">
         {/* Top header */}
-        <header className="sticky top-0 z-30 h-16 bg-background/80 backdrop-blur-lg border-b border-border/50">
+        <header className="sticky top-0 z-sticky h-16 bg-background/80 backdrop-blur-lg border-b border-border/50">
           <div className="flex items-center justify-between h-full px-4">
             {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-muted"
+              aria-label="Toggle mobile menu"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -349,7 +361,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page content with transition animation */}
-        <main className="px-4 pt-2 pb-4 md:px-6 md:pt-4 md:pb-6 lg:px-8 lg:pt-4 lg:pb-8">
+        <main id="main-content" className="px-4 pt-2 pb-4 md:px-6 md:pt-4 md:pb-6 lg:px-8 lg:pt-4 lg:pb-8">
           <PageTransition>
             {children}
           </PageTransition>

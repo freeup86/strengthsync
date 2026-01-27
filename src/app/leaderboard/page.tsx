@@ -18,6 +18,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import type { DomainSlug } from "@/constants/strengths-data";
 
 interface LeaderboardEntry {
@@ -155,8 +156,9 @@ export default function LeaderboardPage() {
         </div>
       ) : leaderboard.length > 0 ? (
         <div className="space-y-2">
-          {leaderboard.map((entry) => (
-            <Link key={entry.id} href={`/team/${entry.id}`} className="block">
+          {leaderboard.map((entry, index) => (
+            <ScrollReveal key={entry.id} animation={entry.rank <= 3 ? "scale" : "fade-up"} delay={index * 60} duration={350} once>
+            <Link href={`/team/${entry.id}`} className="block">
               <Card
                 className={cn(
                   "transition-all hover:shadow-md",
@@ -242,6 +244,7 @@ export default function LeaderboardPage() {
                 </CardContent>
               </Card>
             </Link>
+            </ScrollReveal>
           ))}
         </div>
       ) : (
@@ -273,17 +276,16 @@ export default function LeaderboardPage() {
               { action: "Receive a shoutout", points: "+10", icon: Trophy, color: "text-amber-500" },
               { action: "Respond to skill request", points: "+15", icon: ArrowUp, color: "text-domain-strategic" },
               { action: "Complete a challenge", points: "+50", icon: Crown, color: "text-amber-400" },
-            ].map((item) => (
-              <div
-                key={item.action}
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
-              >
-                <item.icon className={cn("h-5 w-5", item.color)} />
-                <div>
-                  <p className="font-semibold text-sm">{item.points}</p>
-                  <p className="text-xs text-muted-foreground">{item.action}</p>
+            ].map((item, index) => (
+              <ScrollReveal key={item.action} animation="fade-up" delay={index * 75} duration={300} once>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                  <item.icon className={cn("h-5 w-5", item.color)} />
+                  <div>
+                    <p className="font-semibold text-sm">{item.points}</p>
+                    <p className="text-xs text-muted-foreground">{item.action}</p>
+                  </div>
                 </div>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </CardContent>

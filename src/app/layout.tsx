@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { BadgeCelebrationProvider } from "@/components/providers/BadgeCelebrationProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -59,8 +60,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background antialiased">
         <SessionProvider>
-          <ThemeProvider defaultTheme="system" storageKey="strengthsync-theme">
-            {children}
+          <ThemeProvider defaultTheme="light" storageKey="strengthsync-theme">
+            <BadgeCelebrationProvider>
+              {children}
+            </BadgeCelebrationProvider>
           </ThemeProvider>
         </SessionProvider>
       </body>

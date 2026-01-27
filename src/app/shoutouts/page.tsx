@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import type { DomainSlug } from "@/constants/strengths-data";
 
 interface Shoutout {
@@ -151,8 +152,9 @@ export default function ShoutoutsPage() {
         </div>
       ) : shoutouts.length > 0 ? (
         <div className="space-y-4">
-          {shoutouts.map((shoutout) => (
-            <Card key={shoutout.id} className="overflow-hidden">
+          {shoutouts.map((shoutout, index) => (
+            <ScrollReveal key={shoutout.id} animation="fade-up" delay={index * 70} duration={350} once>
+            <Card className="overflow-hidden">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">
                   {/* Giver */}
@@ -221,6 +223,7 @@ export default function ShoutoutsPage() {
                 </div>
               </CardContent>
             </Card>
+            </ScrollReveal>
           ))}
         </div>
       ) : (

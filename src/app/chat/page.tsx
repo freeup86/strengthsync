@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatRenameDialog } from "@/components/chat/ChatRenameDialog";
+import { ErrorBoundary } from "@/components/effects/ErrorBoundary";
 import {
   Bot,
   Send,
@@ -396,7 +397,7 @@ export default function ChatPage() {
       {/* Mobile sidebar backdrop */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-overlay bg-black/50 backdrop-blur-sm md:hidden"
           onClick={() => setMobileSidebarOpen(false)}
         />
       )}
@@ -404,7 +405,7 @@ export default function ChatPage() {
       {/* Sidebar - Mobile */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 md:hidden transform transition-transform duration-300",
+          "fixed inset-y-0 left-0 z-modal md:hidden transform transition-transform duration-300",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -497,48 +498,50 @@ export default function ChatPage() {
               </div>
             )}
 
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex gap-3",
-                  message.role === "user" ? "justify-end" : "justify-start"
-                )}
-              >
-                {message.role === "assistant" && (
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarFallback className="bg-domain-strategic text-white dark:bg-domain-strategic/80">
-                      <Bot className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-
+            <ErrorBoundary>
+              {messages.map((message) => (
                 <div
+                  key={message.id}
                   className={cn(
-                    "rounded-2xl px-4 py-3 max-w-[80%]",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
+                    "flex gap-3",
+                    message.role === "user" ? "justify-end" : "justify-start"
                   )}
                 >
-                  {message.role === "assistant" ? (
-                    <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 prose-strong:text-foreground prose-headings:my-3">
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  {message.role === "assistant" && (
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className="bg-domain-strategic text-white dark:bg-domain-strategic/80">
+                        <Bot className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+
+                  <div
+                    className={cn(
+                      "rounded-2xl px-4 py-3 max-w-[80%]",
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    )}
+                  >
+                    {message.role === "assistant" ? (
+                      <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 prose-strong:text-foreground prose-headings:my-3">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    )}
+                  </div>
+
+                  {message.role === "user" && (
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className="bg-domain-influencing text-white dark:bg-domain-influencing/80">
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
                   )}
                 </div>
-
-                {message.role === "user" && (
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarFallback className="bg-domain-influencing text-white dark:bg-domain-influencing/80">
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
+              ))}
+            </ErrorBoundary>
 
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex gap-3">

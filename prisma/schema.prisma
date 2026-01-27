@@ -99,6 +99,7 @@ model User {
   organizationMemberships OrganizationMember[]
   uploadedDocuments       StrengthsDocument[]
   notifications           Notification[]
+  teamsUserMappings       TeamsUserMapping[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -416,7 +417,8 @@ model BadgeEarned {
   badgeId  String
   badge    Badge              @relation(fields: [badgeId], references: [id])
 
-  earnedAt DateTime @default(now())
+  earnedAt       DateTime  @default(now())
+  acknowledgedAt DateTime?
 
   @@unique([memberId, badgeId])
   @@map("badges_earned")
@@ -817,6 +819,28 @@ enum EvidenceType {
   CHALLENGE_COMPLETION
   BADGE_EARNED
   CUSTOM
+}
+
+// ============================================================================
+// AUDIT LOG
+// ============================================================================
+
+// ============================================================================
+// EXTERNAL INTEGRATIONS
+// ============================================================================
+
+model TeamsUserMapping {
+  id             String @id @default(cuid())
+  teamsUserId    String @unique
+  teamsChannelId String?
+  userId         String
+  user           User   @relation(fields: [userId], references: [id])
+  organizationId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("teams_user_mappings")
 }
 
 // ============================================================================

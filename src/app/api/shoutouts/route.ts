@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiCreated, apiListSuccess, apiError, ApiErrorCode } from "@/lib/api/response";
 import { z } from "zod";
+import { checkAndAwardBadges } from "@/lib/gamification/badge-engine";
+import { sendTeamsNotification, buildShoutoutCard } from "@/lib/integrations/teams-webhook";
 
 const createShoutoutSchema = z.object({
   receiverId: z.string().min(1, "Recipient is required"),
@@ -179,7 +181,7 @@ export async function POST(request: NextRequest) {
         },
         receiver: {
           include: {
-            user: { select: { fullName: true } },
+            user: { select: { id: true, fullName: true } },
           },
         },
         theme: {
@@ -216,6 +218,37 @@ export async function POST(request: NextRequest) {
         shoutoutId: shoutout.id,
       },
     });
+
+    // Notify receiver about the shoutout
+    await prisma.notification.create({
+      data: {
+        userId: shoutout.receiver.user.id,
+        type: "SHOUTOUT_RECEIVED",
+        title: "You received a shoutout!",
+        message: `${shoutout.giver.user.fullName} recognized you${shoutout.theme ? ` for your ${shoutout.theme.name} strength` : ""}`,
+        link: `/shoutouts`,
+        metadata: JSON.parse(JSON.stringify({
+          shoutoutId: shoutout.id,
+          giverName: shoutout.giver.user.fullName,
+          themeName: shoutout.theme?.name,
+        })),
+      },
+    });
+
+    // Badge engine: check for newly earned badges
+    const giverBadges = await checkAndAwardBadges(memberId, "shoutout_given");
+    const receiverBadges = await checkAndAwardBadges(receiverId, "shoutout_received");
+
+    // Teams webhook: fire-and-forget shoutout notification
+    sendTeamsNotification(
+      organizationId,
+      buildShoutoutCard(
+        shoutout.giver.user.fullName || "Someone",
+        shoutout.receiver.user.fullName || "Someone",
+        shoutout.theme?.name || null,
+        shoutout.message
+      )
+    );
 
     return apiCreated({
       id: shoutout.id,

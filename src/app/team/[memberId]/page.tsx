@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { ThemeBadge, ThemeBadgeList } from "@/components/strengths/ThemeBadge";
 import { DomainIcon } from "@/components/strengths/DomainIcon";
+import { Skeleton, SkeletonStrengthBadges } from "@/components/ui/Skeleton";
 import {
   ArrowLeft,
   Mail,
@@ -177,12 +178,33 @@ export default function MemberProfilePage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <div className="text-center py-12">
-          <div className="animate-pulse space-y-4">
-            <div className="h-24 w-24 rounded-full bg-muted mx-auto" />
-            <div className="h-6 w-48 bg-muted rounded mx-auto" />
-            <div className="h-4 w-32 bg-muted rounded mx-auto" />
+        <div className="text-center py-8">
+          <Skeleton className="h-24 w-24 rounded-full mx-auto" />
+          <Skeleton className="h-6 w-48 mx-auto mt-4" />
+          <Skeleton className="h-4 w-32 mx-auto mt-2" />
+          <div className="flex justify-center mt-4">
+            <SkeletonStrengthBadges />
           </div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardContent className="pt-6 space-y-3">
+              <Skeleton className="h-5 w-36" />
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-6 w-6 rounded" />
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 flex-1" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 space-y-3">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-32 w-full rounded-xl" />
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

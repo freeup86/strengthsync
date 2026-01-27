@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 
 const CHALLENGE_TYPES = [
   {
@@ -169,6 +170,13 @@ export default function CreateChallengePage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Challenges", href: "/challenges" },
+          { label: "Create Challenge" },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>

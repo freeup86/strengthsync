@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiCreated, apiError, ApiErrorCode } from "@/lib/api/response";
 import { z } from "zod";
+import { checkAndAwardBadges } from "@/lib/gamification/badge-engine";
+import { sendTeamsNotification, buildSkillRequestCard } from "@/lib/integrations/teams-webhook";
 
 const responseSchema = z.object({
   message: z.string().min(10).max(2000),
@@ -123,6 +125,19 @@ export async function POST(
       },
     });
 
+    // Badge engine: check for badges after skill response
+    await checkAndAwardBadges(memberId, "skill_response");
+
+    // Teams webhook: fire-and-forget notification
+    sendTeamsNotification(
+      organizationId,
+      buildSkillRequestCard(
+        response.responder.user.fullName || "Someone",
+        skillRequest.title,
+        skillRequest.urgency
+      )
+    );
+
     return apiCreated({
       id: response.id,
       message: response.message,
@@ -232,6 +247,9 @@ export async function PATCH(
           })),
         },
       });
+
+      // Badge engine: check for accepted-response badges
+      await checkAndAwardBadges(responseToUpdate.responderId, "skill_response_accepted");
     }
 
     return apiSuccess({

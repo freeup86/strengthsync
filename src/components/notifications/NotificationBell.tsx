@@ -169,7 +169,7 @@ export function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-card rounded-xl shadow-lg border z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-80 bg-card rounded-xl shadow-lg border z-dropdown overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <h3 className="font-semibold">Notifications</h3>
@@ -280,6 +280,7 @@ export function NotificationBell() {
                         handleDismiss(notification.id);
                       }}
                       className="absolute top-2 right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
+                      aria-label="Dismiss notification"
                     >
                       <X className="h-3 w-3 text-muted-foreground" />
                     </button>

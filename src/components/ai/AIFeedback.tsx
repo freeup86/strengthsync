@@ -94,6 +94,7 @@ export function AIFeedbackInline({
         onClick={() => handleFeedback("positive")}
         className="p-0.5 hover:text-domain-strategic transition-colors"
         title="Helpful"
+        aria-label="Helpful"
       >
         <ThumbsUp className="h-3 w-3" />
       </button>
@@ -101,6 +102,7 @@ export function AIFeedbackInline({
         onClick={() => handleFeedback("negative")}
         className="p-0.5 hover:text-destructive transition-colors"
         title="Not helpful"
+        aria-label="Not helpful"
       >
         <ThumbsDown className="h-3 w-3" />
       </button>

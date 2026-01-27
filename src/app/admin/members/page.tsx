@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 import type { DomainSlug } from "@/constants/strengths-data";
 
 interface Member {
@@ -412,6 +413,13 @@ export default function AdminMembersPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Members" },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -563,6 +571,7 @@ export default function AdminMembersPage() {
                             <DropdownMenuTrigger asChild>
                               <button
                                 className="p-2 rounded-lg hover:bg-muted cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                                aria-label="Member actions"
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </button>
@@ -740,6 +749,7 @@ export default function AdminMembersPage() {
                       variant="outline"
                       size="sm"
                       onClick={copyTempPassword}
+                      aria-label="Copy temporary password"
                     >
                       {copiedPassword ? (
                         <Check className="h-4 w-4 text-green-500" />
@@ -946,6 +956,7 @@ export default function AdminMembersPage() {
                     variant="outline"
                     size="sm"
                     onClick={copyResetPassword}
+                    aria-label="Copy reset password"
                   >
                     {copiedResetPassword ? (
                       <Check className="h-4 w-4 text-green-500" />

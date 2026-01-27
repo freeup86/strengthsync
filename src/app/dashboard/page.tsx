@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { RecognitionPrompt } from "@/components/notifications/RecognitionPrompt";
 import { ScrollReveal, ScrollRevealGroup } from "@/components/ui/ScrollReveal";
+import { ErrorBoundary } from "@/components/effects/ErrorBoundary";
 import Link from "next/link";
 import {
   Users,
@@ -179,9 +180,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats cards */}
-      <ScrollRevealGroup staggerDelay={100}>
+      <ScrollRevealGroup staggerDelay={80}>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <ScrollReveal animation="fade-up">
+          <ScrollReveal animation="fade-up" duration={350}>
             <Link href="/directory" className="block h-full">
               <Card className="card-interactive h-full cursor-pointer">
                 <CardContent className="pt-6">
@@ -201,7 +202,7 @@ export default function DashboardPage() {
             </Link>
           </ScrollReveal>
 
-          <ScrollReveal animation="fade-up">
+          <ScrollReveal animation="fade-up" duration={350}>
             <Link href="/shoutouts" className="block h-full">
               <Card className="card-interactive h-full cursor-pointer">
                 <CardContent className="pt-6">
@@ -221,7 +222,7 @@ export default function DashboardPage() {
             </Link>
           </ScrollReveal>
 
-          <ScrollReveal animation="fade-up">
+          <ScrollReveal animation="fade-up" duration={350}>
             <Link href="/leaderboard" className="block h-full">
               <Card className="card-interactive h-full cursor-pointer">
                 <CardContent className="pt-6">
@@ -460,25 +461,27 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid sm:grid-cols-2 gap-4">
-                {visibleSteps.map((step) => (
-                  <Link key={step.href} href={step.href}>
-                    <Card
-                      variant={step.color}
-                      interactive
-                      className="h-full p-4"
-                    >
-                      <div className="flex items-start gap-3">
-                        <DomainIcon domain={step.color} size="lg" />
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-sm">{step.title}</h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {step.description}
-                          </p>
+                {visibleSteps.map((step, index) => (
+                  <ScrollReveal key={step.href} animation="fade-up" delay={index * 75} duration={350} once>
+                    <Link href={step.href}>
+                      <Card
+                        variant={step.color}
+                        interactive
+                        className="h-full p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <DomainIcon domain={step.color} size="lg" />
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm">{step.title}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {step.description}
+                            </p>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </Card>
-                  </Link>
+                      </Card>
+                    </Link>
+                  </ScrollReveal>
                 ))}
               </div>
             </CardContent>
@@ -488,7 +491,9 @@ export default function DashboardPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* AI Recognition Suggestions */}
-          <RecognitionPrompt />
+          <ErrorBoundary>
+            <RecognitionPrompt />
+          </ErrorBoundary>
 
           {/* Suggested Partner */}
           <Card>

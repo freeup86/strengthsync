@@ -23,6 +23,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import Link from "next/link";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 
 interface UsageData {
   summary: {
@@ -150,6 +151,13 @@ export default function AdminAIPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "AI Usage" },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

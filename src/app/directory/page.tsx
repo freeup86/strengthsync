@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { DOMAINS, THEMES, type DomainSlug } from "@/constants/strengths-data";
 
 interface Member {
@@ -272,8 +273,9 @@ export default function DirectoryPage() {
       ) : members.length > 0 ? (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {members.map((member) => (
-              <Link key={member.id} href={`/team/${member.id}`}>
+            {members.map((member, index) => (
+              <ScrollReveal key={member.id} animation="fade-up" delay={index * 60} duration={350} once>
+              <Link href={`/team/${member.id}`}>
                 <Card
                   interactive
                   className="h-full hover:shadow-md transition-all duration-200"
@@ -333,6 +335,7 @@ export default function DirectoryPage() {
                   </CardContent>
                 </Card>
               </Link>
+              </ScrollReveal>
             ))}
           </div>
 

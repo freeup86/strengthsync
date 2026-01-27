@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, ApiErrorCode } from "@/lib/api/response";
+import { checkAndAwardBadges } from "@/lib/gamification/badge-engine";
 
 // GET - Get a specific mentorship
 export async function GET(
@@ -206,6 +207,16 @@ export async function PATCH(
         where: { id: memberId },
         data: { points: { increment: 20 } },
       });
+
+      // Badge engine: check for mentorship-started badges (both parties)
+      await checkAndAwardBadges(updated.mentorId, "mentorship_started");
+      await checkAndAwardBadges(updated.menteeId, "mentorship_started");
+    }
+
+    // Badge engine: check for mentorship-completed badges
+    if (action === "complete") {
+      await checkAndAwardBadges(updated.mentorId, "mentorship_completed");
+      await checkAndAwardBadges(updated.menteeId, "mentorship_completed");
     }
 
     return apiSuccess({

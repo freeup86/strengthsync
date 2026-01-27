@@ -3,9 +3,17 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import {
   ClipboardList,
   Plus,
@@ -22,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 
 interface ReviewCycle {
   id: string;
@@ -243,6 +252,13 @@ export default function AdminReviewCyclesPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Review Cycles" },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -405,143 +421,152 @@ export default function AdminReviewCyclesPage() {
       )}
 
       {/* Create/Edit Modal */}
-      {(showCreateModal || editingCycle) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>
-                {editingCycle ? "Edit Review Cycle" : "Create Review Cycle"}
-              </CardTitle>
-              <CardDescription>
-                {editingCycle
-                  ? "Update the review cycle settings"
-                  : "Set up a new performance review cycle"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {error && (
-                <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
-                  {error}
-                </div>
-              )}
+      <Dialog
+        open={showCreateModal || !!editingCycle}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowCreateModal(false);
+            setEditingCycle(null);
+            resetForm();
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCycle ? "Edit Review Cycle" : "Create Review Cycle"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingCycle
+                ? "Update the review cycle settings"
+                : "Set up a new performance review cycle"}
+            </DialogDescription>
+          </DialogHeader>
 
+          <div className="space-y-4">
+            {error && (
+              <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Name <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Q4 2024 Review"
+                className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Optional description..."
+                className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[80px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Cycle Type</label>
+              <select
+                value={formData.cycleType}
+                onChange={(e) => setFormData({ ...formData, cycleType: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {CYCLE_TYPES.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Name <span className="text-destructive">*</span>
+                  Start Date <span className="text-destructive">*</span>
                 </label>
                 <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Q4 2024 Review"
+                  type="date"
+                  value={formData.startsAt}
+                  onChange={(e) => setFormData({ ...formData, startsAt: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-
               <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Optional description..."
-                  className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[80px]"
+                <label className="text-sm font-medium">
+                  End Date <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.endsAt}
+                  onChange={(e) => setFormData({ ...formData, endsAt: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Cycle Type</label>
-                <select
-                  value={formData.cycleType}
-                  onChange={(e) => setFormData({ ...formData, cycleType: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  {CYCLE_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-3 pt-2">
+              <label className="text-sm font-medium">Review Components</label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.includeSelfAssessment}
+                  onChange={(e) => setFormData({ ...formData, includeSelfAssessment: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm">Include self-assessment</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.includeManagerReview}
+                  onChange={(e) => setFormData({ ...formData, includeManagerReview: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm">Include manager review</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.includeStrengthsContext}
+                  onChange={(e) => setFormData({ ...formData, includeStrengthsContext: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm">Show strengths context in reviews</span>
+              </label>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Start Date <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.startsAt}
-                    onChange={(e) => setFormData({ ...formData, startsAt: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    End Date <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.endsAt}
-                    onChange={(e) => setFormData({ ...formData, endsAt: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-2">
-                <label className="text-sm font-medium">Review Components</label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.includeSelfAssessment}
-                    onChange={(e) => setFormData({ ...formData, includeSelfAssessment: e.target.checked })}
-                    className="rounded"
-                  />
-                  <span className="text-sm">Include self-assessment</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.includeManagerReview}
-                    onChange={(e) => setFormData({ ...formData, includeManagerReview: e.target.checked })}
-                    className="rounded"
-                  />
-                  <span className="text-sm">Include manager review</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.includeStrengthsContext}
-                    onChange={(e) => setFormData({ ...formData, includeStrengthsContext: e.target.checked })}
-                    className="rounded"
-                  />
-                  <span className="text-sm">Show strengths context in reviews</span>
-                </label>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setEditingCycle(null);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={editingCycle ? handleUpdateCycle : handleCreateCycle}
-                disabled={saving}
-              >
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {editingCycle ? "Update Cycle" : "Create Cycle"}
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateModal(false);
+                setEditingCycle(null);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={editingCycle ? handleUpdateCycle : handleCreateCycle}
+              disabled={saving}
+            >
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {editingCycle ? "Update Cycle" : "Create Cycle"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Activate Confirmation */}
       {activateConfirm && (

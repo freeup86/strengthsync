@@ -22,6 +22,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 import type { DomainSlug } from "@/constants/strengths-data";
 
 interface UploadResult {
@@ -264,6 +265,13 @@ export default function UploadPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
+      <Breadcrumbs
+        items={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Upload Strengths" },
+        ]}
+      />
+
       <div>
         <h1 className="font-display text-3xl font-bold">Upload CliftonStrengths</h1>
         <p className="text-muted-foreground mt-1">
@@ -479,7 +487,7 @@ export default function UploadPage() {
 
                       {/* Dropdown */}
                       {showMemberDropdown && !selectedMember && (
-                        <div className="absolute z-10 w-full mt-1 bg-card border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                        <div className="absolute z-dropdown w-full mt-1 bg-card border rounded-lg shadow-lg max-h-64 overflow-y-auto">
                           {filteredMembers.length === 0 ? (
                             <div className="p-4 text-center text-sm text-muted-foreground">
                               {memberSearch ? (

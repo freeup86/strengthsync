@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { Input } from "@/components/ui/Input";
 import { DomainIcon } from "@/components/strengths/DomainIcon";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   ArrowLeft,
   Trophy,
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 import type { DomainSlug } from "@/constants/strengths-data";
 
 interface BingoSquare {
@@ -196,11 +198,30 @@ export default function ChallengePage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/2" />
-          <div className="h-4 bg-muted rounded w-3/4" />
-          <div className="h-64 bg-muted rounded" />
-        </div>
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-12 w-12 rounded-xl" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-6 w-1/2" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+              <Skeleton className="h-8 w-24 rounded-full" />
+            </div>
+            <Skeleton className="h-px w-full" />
+            <div className="grid grid-cols-3 gap-4">
+              <Skeleton className="h-16 rounded-lg" />
+              <Skeleton className="h-16 rounded-lg" />
+              <Skeleton className="h-16 rounded-lg" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 space-y-3">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-64 w-full rounded-xl" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -228,6 +249,13 @@ export default function ChallengePage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Challenges", href: "/challenges" },
+          { label: challenge.name },
+        ]}
+      />
+
       {/* Back button */}
       <Button variant="ghost" onClick={() => router.back()}>
         <ArrowLeft className="h-4 w-4 mr-2" />

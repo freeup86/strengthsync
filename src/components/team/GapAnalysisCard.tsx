@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/Button";
 import { ThemeBadge } from "@/components/strengths/ThemeBadge";
 import { DomainIcon } from "@/components/strengths/DomainIcon";
+import { ErrorBoundary } from "@/components/effects/ErrorBoundary";
 import { AlertTriangle, Lightbulb, TrendingDown, Users, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DomainSlug } from "@/constants/strengths-data";
@@ -88,6 +89,7 @@ export function GapAnalysisCard({ data, totalMembers }: GapAnalysisCardProps) {
   };
 
   return (
+    <ErrorBoundary>
     <Card variant={hasGaps ? "influencing" : "strategic"}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -364,5 +366,6 @@ export function GapAnalysisCard({ data, totalMembers }: GapAnalysisCardProps) {
         </div>
       </CardContent>
     </Card>
+    </ErrorBoundary>
   );
 }

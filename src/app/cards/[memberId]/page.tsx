@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
+import { Skeleton, SkeletonStrengthBadges } from "@/components/ui/Skeleton";
 import { DomainIcon } from "@/components/strengths/DomainIcon";
 import {
   ArrowLeft,
@@ -137,8 +138,24 @@ export default function StrengthsCardPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-pulse space-y-4">
-          <div className="w-80 h-[450px] bg-muted rounded-2xl" />
+        <div className="w-80 space-y-4">
+          <div className="rounded-2xl border bg-card p-6 space-y-6">
+            <div className="flex flex-col items-center space-y-3">
+              <Skeleton className="h-20 w-20 rounded-full" />
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-4 w-28" />
+            </div>
+            <SkeletonStrengthBadges />
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+              <Skeleton className="h-3 w-3/5" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-8 flex-1 rounded" />
+              <Skeleton className="h-8 flex-1 rounded" />
+            </div>
+          </div>
         </div>
       </div>
     );

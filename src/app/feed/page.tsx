@@ -25,6 +25,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import type { DomainSlug } from "@/constants/strengths-data";
 
 interface FeedItem {
@@ -618,12 +619,13 @@ export default function FeedPage() {
         </div>
       ) : feedItems.length > 0 ? (
         <div className="space-y-4">
-          {feedItems.map((item) => (
-            <FeedItemCard
-              key={item.id}
-              item={item}
-              onReact={(emoji) => handleReact(item.id, emoji)}
-            />
+          {feedItems.map((item, index) => (
+            <ScrollReveal key={item.id} animation="fade-up" delay={index * 70} duration={350} once>
+              <FeedItemCard
+                item={item}
+                onReact={(emoji) => handleReact(item.id, emoji)}
+              />
+            </ScrollReveal>
           ))}
         </div>
       ) : (

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, ApiErrorCode } from "@/lib/api/response";
 import { z } from "zod";
+import { checkAndAwardBadges } from "@/lib/gamification/badge-engine";
 
 const markSquareSchema = z.object({
   row: z.number().min(0).max(4),
@@ -170,6 +171,9 @@ export async function POST(
         where: { id: myMemberId },
         data: { points: { increment: 50 } },
       });
+
+      // Badge engine: check for challenge-completed badges
+      await checkAndAwardBadges(myMemberId, "challenge_completed");
     }
 
     return apiSuccess({

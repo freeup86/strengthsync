@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { DomainIcon } from "@/components/strengths/DomainIcon";
+import { ErrorBoundary } from "@/components/effects/ErrorBoundary";
+import { Skeleton, SkeletonDashboardStats } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
@@ -28,6 +30,7 @@ import {
   FileText,
 } from "lucide-react";
 import Link from "next/link";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 import type { DomainSlug } from "@/constants/strengths-data";
 
 interface HealthMetrics {
@@ -184,21 +187,35 @@ export default function ManagerDashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-display text-3xl font-bold">Manager Dashboard</h1>
-            <p className="text-muted-foreground">Loading team health metrics...</p>
+            <Skeleton className="h-4 w-56 mt-1" />
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
+        <SkeletonDashboardStats />
+        <div className="grid gap-6 md:grid-cols-2">
+          {[1, 2].map((i) => (
             <Card key={i}>
-              <CardContent className="pt-6">
-                <div className="animate-pulse space-y-2">
-                  <div className="h-4 w-24 bg-muted rounded" />
-                  <div className="h-8 w-16 bg-muted rounded" />
-                </div>
+              <CardContent className="pt-6 space-y-4">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-40 w-full rounded-xl" />
               </CardContent>
             </Card>
           ))}
         </div>
+        <Card>
+          <CardContent className="pt-6 space-y-3">
+            <Skeleton className="h-5 w-36" />
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <Skeleton className="h-8 w-20 rounded" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -230,6 +247,13 @@ export default function ManagerDashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Dashboard" },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -270,6 +294,7 @@ export default function ManagerDashboardPage() {
       )}
 
       {/* AI Executive Summary */}
+      <ErrorBoundary>
       <Card className="border-domain-strategic/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -494,6 +519,7 @@ export default function ManagerDashboardPage() {
           )}
         </CardContent>
       </Card>
+      </ErrorBoundary>
 
       {/* Key metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

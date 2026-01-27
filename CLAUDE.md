@@ -11,14 +11,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **GitHub**: https://github.com/freeup86/strengthsync
 
 ### Tech Stack
-- **Framework**: Next.js 15 (App Router, Turbopack)
-- **Database**: PostgreSQL with Prisma ORM
-- **Auth**: NextAuth.js with credentials provider (JWT strategy, 7-day sessions)
-- **Styling**: Tailwind CSS with custom domain color system
+- **Framework**: Next.js 15.1 (App Router, Turbopack) with React 19
+- **Database**: PostgreSQL with Prisma 6 ORM
+- **Auth**: NextAuth.js 4 with credentials provider (JWT strategy, 7-day sessions, bcryptjs)
+- **Styling**: Tailwind CSS with custom domain color system + Typography plugin
 - **UI**: Custom components + Radix UI primitives (AlertDialog, Dialog, Dropdown, etc.)
-- **Email**: Resend for transactional emails
+- **Email**: Resend for transactional emails and weekly digests
 - **Charts**: Recharts for data visualization
-- **AI**: Vercel AI SDK with OpenAI (gpt-4o-mini default) for chat/completions
+- **AI**: Vercel AI SDK (`ai` + `@ai-sdk/openai` + `@ai-sdk/react`) with OpenAI gpt-4o-mini default
 - **Validation**: Zod for schema validation
 
 ## Commands
@@ -49,37 +49,34 @@ docker compose --profile setup run migrate
 
 ### Key Directories
 - `src/app/` - Next.js App Router pages and API routes
-- `src/app/api/` - All API endpoints (auth, team, shoutouts, challenges, ai, admin, etc.)
-- `src/components/` - React components organized by domain:
-  - `ui/` - Base components (Button, Card, Dialog, Avatar, Input, etc.)
-  - `layout/` - DashboardLayout (primary navigation wrapper)
-  - `strengths/` - ThemeBadge, StrengthsCard, DomainIcon, analytics components
-  - `team/` - DomainBalanceChart, Partnerships, GapAnalysis
-  - `ai/` - AIEnhanceButton, StreamingText, feedback components
-  - `chat/` - ChatSidebar, ChatHistory, ChatRename
-  - `social/` - Shoutouts, SkillRequests, Feed components
-  - `gamification/` - Badges, Leaderboards, Challenges
-  - `notifications/` - NotificationBell, RecognitionPrompt
-  - `admin/` - Admin-specific UI components
-  - `charts/` - Chart/visualization components
-  - `brand/` - Brand/logo components
-  - `effects/` - Animation/effects components
-  - `onboarding/` - Onboarding/setup flow components
-  - `providers/` - React context providers
-- `src/lib/` - Utilities and services:
-  - `prisma.ts` - Database client singleton
-  - `auth/config.ts` - NextAuth configuration with type augmentations
-  - `api/response.ts` - Standardized API response helpers
-  - `pdf/parser.ts` - CliftonStrengths PDF parsing
-  - `ai/` - AI service (client, rate-limiter, token-tracker, prompts, context, tools)
-  - `email/` - Resend email service and digest templates
-  - `strengths/analytics.ts` - Team analytics calculations
-  - `storage/` - S3 file storage service
-  - `gamification/` - Points, badges, and challenges logic
-  - `validation/` - Zod schema validation utilities
-- `src/constants/strengths-data.ts` - All 34 CliftonStrengths themes and 4 domains with descriptions, blind spots, keywords
-- `src/types/index.ts` - TypeScript interfaces (SessionUser, MemberProfile, TeamComposition, etc.)
-- `prisma/schema.prisma` - Database schema (source of truth for models)
+- `src/app/api/` - API endpoints organized by domain (auth, team, shoutouts, challenges, ai, admin, etc.)
+- `src/components/` - React components organized by domain (~18 subdirectories: `ui/`, `layout/`, `strengths/`, `team/`, `ai/`, `chat/`, `social/`, `gamification/`, `notifications/`, `admin/`, `charts/`, `brand/`, `effects/`, `onboarding/`, `providers/`, etc.)
+- `src/lib/` - Utilities and services (see AI subsystem below)
+- `src/constants/strengths-data.ts` - All 34 CliftonStrengths themes and 4 domains (44KB, with descriptions, blind spots, keywords)
+- `src/types/index.ts` - TypeScript interfaces (SessionUser, MemberProfile, TeamComposition, StrengthBlend, ApplySection, etc.)
+- `prisma/schema.prisma` - Database schema (source of truth, 31 models)
+
+### AI Subsystem Architecture (`src/lib/ai/`)
+The AI layer is the most complex service module with 11 files:
+- `client.ts` - OpenAI client initialization
+- `service.ts` - Core AI service orchestration
+- `rate-limiter.ts` - Per-user rate limiting
+- `token-tracker.ts` - Token usage tracking → `AIUsageLog` table
+- `prompts/index.ts` - System prompt definitions
+- `prompts/template-engine.ts` - Dynamic prompt template rendering (admin-editable via `AIPromptTemplate`)
+- `context/index.ts`, `context/user-context.ts`, `context/team-context.ts` - Build rich context from user/team strengths data for AI calls
+- `tools/index.ts` - AI tool definitions for function calling
+
+### Other Key Service Modules (`src/lib/`)
+- `prisma.ts` - Database client singleton (with dev logging)
+- `auth/config.ts` - NextAuth configuration with session type augmentations
+- `api/response.ts` - Standardized API response helpers
+- `pdf/parser.ts` - CliftonStrengths PDF extraction (parses all 34 ranked themes + personalization data)
+- `email/` - Resend integration with weekly digest templates
+- `strengths/analytics.ts` - Team analytics calculations (domain balance, gaps, partnerships)
+- `storage/` - S3 file storage service
+- `gamification/` - Points, badges, and challenges logic
+- `validation/` - Zod schema validation utilities
 
 ### CliftonStrengths Domain Colors (defined in `tailwind.config.ts`)
 | Domain | Hex | Tailwind Classes |
@@ -319,6 +316,10 @@ await prisma.feedItem.create({
 });
 ```
 
+### Custom Hooks and Error Handling
+- `useConfetti()` - Manages confetti animation state with origin tracking (used in gamification flows)
+- `ErrorBoundary` component in `src/components/effects/` - Wraps sections that may fail gracefully
+
 ## Path Aliases
 
 The project uses `@/*` to reference `./src/*`. Always use this alias in imports:
@@ -419,6 +420,7 @@ Chat conversations are persisted via `AIConversation` and `AIMessage` models:
 2. PDF parsed → 34 `MemberStrength` records created (rank 1-34)
 3. `isTop5` and `isTop10` flags set automatically
 4. Each `MemberStrength` links to `StrengthTheme` → `StrengthDomain`
+5. Personalization data extracted: `strengthBlends` (JSON), `applySection` (JSON), `personalizedInsights` (String array)
 
 ### Gamification Flow
 1. Actions (shoutouts, challenges, etc.) trigger point awards
@@ -427,24 +429,18 @@ Chat conversations are persisted via `AIConversation` and `AIMessage` models:
 4. `FeedItem` created for social visibility
 5. `Notification` sent to relevant users
 
-## Admin Features
+### AI Response Caching
+Partnership reasoning (expensive AI calls) is cached in `PartnershipReasoning` model keyed by the member pair, avoiding redundant OpenAI API calls for the same partnership analysis.
 
-Admin routes (`/admin/*`) have two tiers of access:
+### Audit Trail
+All significant operations log to the `AuditLog` model with action, entity type/ID, actor, and metadata. AI token usage is separately tracked in `AIUsageLog` with per-request token counts and costs.
 
-**OWNER/ADMIN only:**
-- **Members**: View/edit all organization members (`/admin/members`)
-- **Upload Strengths**: Import strengths via PDF (`/admin/upload`)
-- **Bulk Import**: CSV member import (`/admin/import`)
-- **Constants**: Edit strength domains and themes (`/admin/constants`)
+## Admin API Endpoints
 
-**OWNER/ADMIN/MANAGER:**
-- **Manager Dashboard**: Organization health metrics (`/admin/dashboard`)
-- **Review Cycles**: Create/manage performance review cycles (`/admin/review-cycles`)
-
-**Admin API endpoints:**
-- **AI Prompts**: Manage AI prompt templates (`/admin/ai/prompts`)
-- **AI Usage**: Monitor token usage and costs (`/admin/ai/usage`)
-- **Health Metrics**: Organization health dashboard (`/admin/health-metrics`)
+In addition to the admin UI routes documented in the RBAC section above:
+- `/api/admin/ai/prompts` - Manage AI prompt templates (`AIPromptTemplate` model)
+- `/api/admin/ai/usage` - Monitor token usage and costs (`AIUsageLog` model)
+- `/api/admin/health-metrics` - Organization health dashboard metrics
 
 ## NextAuth Session Type
 

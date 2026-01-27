@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/effects/ErrorBoundary";
 
 export interface StreamingTextProps {
   text: string;
@@ -47,12 +48,20 @@ export function StreamingText({
   }, [text, speed, onComplete]);
 
   return (
-    <span className={cn("whitespace-pre-wrap", className)}>
-      {displayedText}
-      {cursor && !isComplete && (
-        <span className="inline-block w-2 h-4 ml-0.5 bg-current animate-pulse" />
-      )}
-    </span>
+    <ErrorBoundary
+      fallback={
+        <span className={cn("text-sm text-destructive", className)}>
+          Failed to render text content.
+        </span>
+      }
+    >
+      <span className={cn("whitespace-pre-wrap", className)}>
+        {displayedText}
+        {cursor && !isComplete && (
+          <span className="inline-block w-2 h-4 ml-0.5 bg-current animate-pulse" />
+        )}
+      </span>
+    </ErrorBoundary>
   );
 }
 
@@ -67,11 +76,19 @@ export function AIStreamedText({
   className?: string;
 }) {
   return (
-    <span className={cn("whitespace-pre-wrap", className)}>
-      {text}
-      {isStreaming && (
-        <span className="inline-block w-2 h-4 ml-0.5 bg-current animate-pulse" />
-      )}
-    </span>
+    <ErrorBoundary
+      fallback={
+        <span className={cn("text-sm text-destructive", className)}>
+          Failed to render text content.
+        </span>
+      }
+    >
+      <span className={cn("whitespace-pre-wrap", className)}>
+        {text}
+        {isStreaming && (
+          <span className="inline-block w-2 h-4 ml-0.5 bg-current animate-pulse" />
+        )}
+      </span>
+    </ErrorBoundary>
   );
 }

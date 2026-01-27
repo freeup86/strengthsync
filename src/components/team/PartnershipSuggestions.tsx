@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/Tooltip";
+import { ErrorBoundary } from "@/components/effects/ErrorBoundary";
 import { Handshake, ArrowRight, Users, ChevronDown, ChevronUp, Loader2, Brain, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -266,54 +267,56 @@ export function PartnershipSuggestions({
   const displayPartnerships = showAll ? partnerships : partnerships.slice(0, 5);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Handshake className="h-5 w-5 text-domain-relationship" />
-          Partnership Suggestions
-        </CardTitle>
-        <CardDescription>
-          Team members with complementary strengths that could work well together
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {partnerships.length === 0 ? (
-          <div className="text-center py-8">
-            <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-            <h4 className="font-medium">No Partnerships Yet</h4>
-            <p className="text-sm text-muted-foreground mt-1">
-              Add more team members with their strengths to see partnership suggestions.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {displayPartnerships.map((partnership) => (
-              <PartnershipCard
-                key={`${partnership.member1.id}-${partnership.member2.id}`}
-                partnership={partnership}
-              />
-            ))}
+    <ErrorBoundary>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Handshake className="h-5 w-5 text-domain-relationship" />
+            Partnership Suggestions
+          </CardTitle>
+          <CardDescription>
+            Team members with complementary strengths that could work well together
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {partnerships.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+              <h4 className="font-medium">No Partnerships Yet</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                Add more team members with their strengths to see partnership suggestions.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {displayPartnerships.map((partnership) => (
+                <PartnershipCard
+                  key={`${partnership.member1.id}-${partnership.member2.id}`}
+                  partnership={partnership}
+                />
+              ))}
 
-            {/* Show more button */}
-            {!showAll && partnerships.length > 5 && (
-              <div className="text-center pt-2">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/team/partnerships">
-                    View all {partnerships.length} partnerships
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+              {/* Show more button */}
+              {!showAll && partnerships.length > 5 && (
+                <div className="text-center pt-2">
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/team/partnerships">
+                      View all {partnerships.length} partnerships
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
-        {/* Stats footer */}
-        <div className="flex items-center justify-between pt-4 mt-4 border-t text-xs text-muted-foreground">
-          <span>{partnerships.length} partnerships identified</span>
-          <span>{totalPossiblePairings} possible pairings</span>
-        </div>
-      </CardContent>
-    </Card>
+          {/* Stats footer */}
+          <div className="flex items-center justify-between pt-4 mt-4 border-t text-xs text-muted-foreground">
+            <span>{partnerships.length} partnerships identified</span>
+            <span>{totalPossiblePairings} possible pairings</span>
+          </div>
+        </CardContent>
+      </Card>
+    </ErrorBoundary>
   );
 }

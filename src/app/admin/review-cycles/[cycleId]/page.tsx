@@ -10,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/Avatar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { getInitials } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 import {
   ClipboardList,
   ArrowLeft,
@@ -210,6 +211,14 @@ export default function ReviewCycleDetailPage({
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Review Cycles", href: "/admin/review-cycles" },
+          { label: cycle.name },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

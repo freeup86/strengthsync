@@ -77,6 +77,15 @@ const config: Config = {
         display: ["var(--font-display)", "system-ui", "sans-serif"],
         body: ["var(--font-body)", "system-ui", "sans-serif"],
       },
+      zIndex: {
+        'dropdown': '100',
+        'sticky': '200',
+        'overlay': '300',
+        'modal': '400',
+        'toast': '500',
+        'tooltip': '600',
+        'max': '9999',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

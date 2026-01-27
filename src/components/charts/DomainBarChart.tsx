@@ -86,8 +86,17 @@ export function DomainBarChart({
     return () => observer.disconnect();
   }, [animated]);
 
+  // Build dynamic aria-label from chart data
+  const totalValue = data.reduce((sum, d) => sum + d.value, 0);
+  const ariaLabel = `Domain bar chart. ${data
+    .map((item) => {
+      const pct = totalValue > 0 ? Math.round((item.value / totalValue) * 100) : 0;
+      return `${item.label}: ${item.value} (${pct}%)`;
+    })
+    .join(", ")}.`;
+
   return (
-    <div ref={containerRef} className={cn("space-y-4", className)}>
+    <div ref={containerRef} className={cn("space-y-4", className)} role="img" aria-label={ariaLabel} tabIndex={0}>
       {data.map((item, index) => {
         const percentage = (item.value / computedMaxValue) * 100 * animationProgress;
 
@@ -106,7 +115,7 @@ export function DomainBarChart({
               </div>
             )}
 
-            <div className="h-3 bg-muted rounded-full overflow-hidden">
+            <div className="h-3 bg-muted rounded-full overflow-hidden" role="presentation">
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-700 shadow-lg",
@@ -122,6 +131,30 @@ export function DomainBarChart({
           </div>
         );
       })}
+
+      {/* Visually-hidden data table for screen readers */}
+      <table className="sr-only">
+        <caption>Domain Distribution</caption>
+        <thead>
+          <tr>
+            <th scope="col">Domain</th>
+            <th scope="col">Value</th>
+            <th scope="col">Percentage</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item) => {
+            const pct = totalValue > 0 ? Math.round((item.value / totalValue) * 100) : 0;
+            return (
+              <tr key={item.domain}>
+                <td>{item.label}</td>
+                <td>{item.value}</td>
+                <td>{pct}%</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

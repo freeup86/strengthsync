@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { DomainIcon } from "@/components/strengths/DomainIcon";
 import { ThemeBadge } from "@/components/strengths/ThemeBadge";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   ArrowLeft,
   Clock,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 import type { DomainSlug } from "@/constants/strengths-data";
 
 interface SkillRequest {
@@ -296,14 +298,38 @@ export default function RequestDetailPage({
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <Skeleton className="h-9 w-24" />
         <Card>
-          <CardContent className="py-12">
-            <div className="animate-pulse space-y-4">
-              <div className="h-8 bg-muted rounded w-3/4" />
-              <div className="h-4 bg-muted rounded w-1/2" />
-              <div className="h-24 bg-muted rounded" />
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-start gap-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+              <Skeleton className="h-8 w-24 rounded-full" />
             </div>
+            <Skeleton className="h-px w-full" />
+            <Skeleton className="h-24 w-full rounded-lg" />
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 space-y-3">
+            <Skeleton className="h-5 w-32" />
+            {[1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-1">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>

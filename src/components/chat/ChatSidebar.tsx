@@ -66,6 +66,7 @@ export function ChatSidebar({
           onClick={onToggleCollapse}
           className={cn(isCollapsed && "mx-auto")}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={isCollapsed ? "Expand chat sidebar" : "Collapse chat sidebar"}
         >
           {isCollapsed ? (
             <PanelLeft className="h-4 w-4" />
@@ -84,6 +85,7 @@ export function ChatSidebar({
             onClick={onNewChat}
             className="w-full"
             title="New Chat"
+            aria-label="New chat"
           >
             <Plus className="h-5 w-5" />
           </Button>
@@ -149,6 +151,7 @@ export function ChatSidebar({
                   : "hover:bg-muted"
               )}
               title={conversation.title || "New conversation"}
+              aria-label={`Open conversation: ${conversation.title || "New conversation"}`}
             >
               <MessageSquare
                 className={cn(

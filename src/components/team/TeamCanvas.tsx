@@ -224,7 +224,7 @@ export function TeamCanvas({
 
                             {/* Hover tooltip */}
                             {isHovered && coverage && coverage.members.length > 0 && (
-                              <div className="absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-popover border rounded-lg shadow-lg min-w-[150px]">
+                              <div className="absolute z-tooltip bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-popover border rounded-lg shadow-lg min-w-[150px]">
                                 <p className="font-semibold text-xs mb-1">{theme.name}</p>
                                 <ul className="text-xs space-y-0.5">
                                   {coverage.members.slice(0, 5).map((m) => (

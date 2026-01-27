@@ -11,6 +11,7 @@ import { PartnershipSuggestions } from "@/components/team/PartnershipSuggestions
 import { TeamCanvas } from "@/components/team/TeamCanvas";
 import { ProjectPartnerFinder } from "@/components/team/ProjectPartnerFinder";
 import { DomainIcon } from "@/components/strengths/DomainIcon";
+import { Skeleton, SkeletonDashboardStats } from "@/components/ui/Skeleton";
 import {
   Users,
   PieChart,
@@ -142,21 +143,23 @@ export default function TeamPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-display text-3xl font-bold">Team Analytics</h1>
-            <p className="text-muted-foreground mt-1">Loading team insights...</p>
+            <Skeleton className="h-4 w-48 mt-1" />
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardContent className="pt-6">
-                <div className="animate-pulse space-y-3">
-                  <div className="h-10 w-10 rounded-xl bg-muted" />
-                  <div className="h-4 w-20 bg-muted rounded" />
-                  <div className="h-8 w-16 bg-muted rounded" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <SkeletonDashboardStats />
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -207,7 +210,7 @@ export default function TeamPage() {
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <div className="absolute right-0 mt-1 w-48 bg-card border rounded-lg shadow-lg z-10 hidden group-hover:block">
+              <div className="absolute right-0 mt-1 w-48 bg-card border rounded-lg shadow-lg z-dropdown hidden group-hover:block">
                 <a
                   href="/api/export/team?format=csv"
                   className="block px-4 py-2 text-sm hover:bg-muted"

@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import type { DomainSlug } from "@/constants/strengths-data";
 
 interface Member {
@@ -148,13 +149,13 @@ export default function CardsGalleryPage() {
         </div>
       ) : filteredMembers.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredMembers.map((member) => {
+          {filteredMembers.map((member, index) => {
             const primaryDomain = getPrimaryDomain(member);
             const isCurrentUser = member.id === session?.user?.memberId;
 
             return (
+              <ScrollReveal key={member.id} animation="fade-up" delay={index * 60} duration={350} once>
               <Link
-                key={member.id}
                 href={`/cards/${member.id}`}
                 className="group"
               >
@@ -244,6 +245,7 @@ export default function CardsGalleryPage() {
                   </div>
                 </div>
               </Link>
+              </ScrollReveal>
             );
           })}
         </div>

@@ -33,6 +33,7 @@ const adminOnlyRoutes = [
   "/admin/import",
   "/admin/constants",
   "/admin/upload",
+  "/admin/excel-import",
 ];
 
 // Manager routes (accessible by OWNER, ADMIN, and MANAGER)

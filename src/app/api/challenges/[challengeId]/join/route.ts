@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, ApiErrorCode } from "@/lib/api/response";
 import { THEMES } from "@/constants/strengths-data";
+import { checkAndAwardBadges } from "@/lib/gamification/badge-engine";
 
 export async function POST(
   request: NextRequest,
@@ -67,6 +68,9 @@ export async function POST(
         score: 0,
       },
     });
+
+    // Badge engine: check for challenge-joined badges
+    await checkAndAwardBadges(memberId, "challenge_joined");
 
     return apiSuccess({
       joined: true,

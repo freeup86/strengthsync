@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { BulkImportForm } from "@/components/admin/BulkImportForm";
 import { ImportResults } from "@/components/admin/ImportResults";
 import { ArrowLeft, Users, FileText, Info } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 import type { BulkImportResponse } from "@/lib/validation/bulk-import";
 
 export default function AdminImportPage() {
@@ -45,6 +46,14 @@ export default function AdminImportPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Members", href: "/admin/members" },
+          { label: "Bulk Import" },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>

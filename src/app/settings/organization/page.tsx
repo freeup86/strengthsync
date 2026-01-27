@@ -19,6 +19,9 @@ import {
   RefreshCw,
   Users,
   Link as LinkIcon,
+  MessageSquare,
+  Send,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +53,15 @@ export default function OrganizationSettingsPage() {
   const [description, setDescription] = useState("");
   const [inviteCodeEnabled, setInviteCodeEnabled] = useState(true);
 
+  // Teams webhook state
+  const [teamsWebhookUrl, setTeamsWebhookUrl] = useState("");
+  const [teamsConfigured, setTeamsConfigured] = useState(false);
+  const [teamsMaskedUrl, setTeamsMaskedUrl] = useState("");
+  const [teamsSaving, setTeamsSaving] = useState(false);
+  const [teamsTesting, setTeamsTesting] = useState(false);
+  const [teamsSuccess, setTeamsSuccess] = useState<string | null>(null);
+  const [teamsError, setTeamsError] = useState<string | null>(null);
+
   const isAdmin = session?.user?.role === "OWNER" || session?.user?.role === "ADMIN";
 
   useEffect(() => {
@@ -58,6 +70,7 @@ export default function OrganizationSettingsPage() {
       return;
     }
     fetchOrganization();
+    fetchTeamsConfig();
   }, [isAdmin, router]);
 
   const fetchOrganization = async () => {
@@ -126,6 +139,102 @@ export default function OrganizationSettingsPage() {
       console.error("Failed to regenerate code:", err);
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  const fetchTeamsConfig = async () => {
+    try {
+      const res = await fetch("/api/admin/integrations/teams");
+      if (res.ok) {
+        const result = await res.json();
+        setTeamsConfigured(result.data.configured);
+        setTeamsMaskedUrl(result.data.maskedUrl);
+      }
+    } catch (err) {
+      console.error("Failed to fetch Teams config:", err);
+    }
+  };
+
+  const handleTeamsSave = async () => {
+    setTeamsSaving(true);
+    setTeamsSuccess(null);
+    setTeamsError(null);
+
+    try {
+      const res = await fetch("/api/admin/integrations/teams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl: teamsWebhookUrl }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setTeamsError(result.error?.message || "Failed to save webhook URL");
+        return;
+      }
+
+      setTeamsConfigured(!!teamsWebhookUrl);
+      setTeamsSuccess("Webhook URL saved!");
+      setTeamsWebhookUrl("");
+      fetchTeamsConfig();
+      setTimeout(() => setTeamsSuccess(null), 3000);
+    } catch (err) {
+      setTeamsError("An unexpected error occurred");
+    } finally {
+      setTeamsSaving(false);
+    }
+  };
+
+  const handleTeamsTest = async () => {
+    setTeamsTesting(true);
+    setTeamsSuccess(null);
+    setTeamsError(null);
+
+    try {
+      const res = await fetch("/api/admin/integrations/teams", {
+        method: "POST",
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setTeamsError(result.error?.message || "Test failed");
+        return;
+      }
+
+      setTeamsSuccess("Test message sent! Check your Teams channel.");
+      setTimeout(() => setTeamsSuccess(null), 5000);
+    } catch (err) {
+      setTeamsError("Failed to send test message");
+    } finally {
+      setTeamsTesting(false);
+    }
+  };
+
+  const handleTeamsRemove = async () => {
+    setTeamsSaving(true);
+    setTeamsSuccess(null);
+    setTeamsError(null);
+
+    try {
+      const res = await fetch("/api/admin/integrations/teams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl: "" }),
+      });
+
+      if (res.ok) {
+        setTeamsConfigured(false);
+        setTeamsMaskedUrl("");
+        setTeamsWebhookUrl("");
+        setTeamsSuccess("Teams integration removed");
+        setTimeout(() => setTeamsSuccess(null), 3000);
+      }
+    } catch (err) {
+      setTeamsError("Failed to remove integration");
+    } finally {
+      setTeamsSaving(false);
     }
   };
 
@@ -278,6 +387,136 @@ export default function OrganizationSettingsPage() {
               </CardFooter>
             </Card>
           </form>
+
+          {/* Teams Integration */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Microsoft Teams Integration
+              </CardTitle>
+              <CardDescription>
+                Send shoutouts, badge awards, and skill requests to a Teams channel via Incoming Webhook.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {teamsError && (
+                <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  {teamsError}
+                </div>
+              )}
+
+              {teamsSuccess && (
+                <div className="flex items-center gap-2 p-3 bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400 rounded-lg text-sm">
+                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                  {teamsSuccess}
+                </div>
+              )}
+
+              {teamsConfigured ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <div>
+                        <p className="font-medium text-green-700 dark:text-green-400">Teams Connected</p>
+                        <p className="text-xs text-green-600/70 dark:text-green-400/70 font-mono">
+                          {teamsMaskedUrl}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTeamsTest}
+                        disabled={teamsTesting}
+                      >
+                        {teamsTesting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                        <span className="ml-1.5">Test</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTeamsRemove}
+                        disabled={teamsSaving}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Update Webhook URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={teamsWebhookUrl}
+                        onChange={(e) => setTeamsWebhookUrl(e.target.value)}
+                        placeholder="https://outlook.office.com/webhook/..."
+                        className="flex-1 px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleTeamsSave}
+                        disabled={teamsSaving || !teamsWebhookUrl}
+                        size="sm"
+                      >
+                        {teamsSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        <span className="ml-1.5">Save</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      To set up Teams notifications, create an Incoming Webhook in your Teams channel settings,
+                      then paste the webhook URL below.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Webhook URL</label>
+                    <input
+                      type="url"
+                      value={teamsWebhookUrl}
+                      onChange={(e) => setTeamsWebhookUrl(e.target.value)}
+                      placeholder="https://outlook.office.com/webhook/..."
+                      className="w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={handleTeamsSave}
+                    disabled={teamsSaving || !teamsWebhookUrl}
+                  >
+                    {teamsSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Connect Teams
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Invite Settings */}
           <Card>

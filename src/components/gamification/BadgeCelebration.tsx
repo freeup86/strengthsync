@@ -76,7 +76,7 @@ export function BadgeCelebration({ badge, isOpen, onClose }: BadgeCelebrationPro
 
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+        className="fixed inset-0 z-modal bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
         onClick={onClose}
       >
         {/* Modal */}

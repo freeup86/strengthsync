@@ -62,6 +62,7 @@ export function ChatHistoryItem({
           <button
             className="p-1.5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg hover:bg-muted"
             onClick={(e) => e.stopPropagation()}
+            aria-label="Conversation options"
           >
             <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
           </button>

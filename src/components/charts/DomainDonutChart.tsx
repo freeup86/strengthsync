@@ -87,59 +87,95 @@ export function DomainDonutChart({
 
   let currentOffset = 0;
 
+  // Build dynamic aria-label from chart data
+  const ariaLabel = `Domain donut chart showing ${centerLabel}: ${centerValue ?? total}. Breakdown: ${data
+    .map((segment) => {
+      const pct = total > 0 ? Math.round((segment.value / total) * 100) : 0;
+      return `${segment.label} ${segment.value} (${pct}%)`;
+    })
+    .join(", ")}.`;
+
   return (
     <div className={cn("relative inline-flex items-center justify-center", className)}>
-      <svg
-        ref={svgRef}
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="-rotate-90"
-      >
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={thickness}
-          className="text-muted/30"
-        />
+      <div role="img" aria-label={ariaLabel} tabIndex={0}>
+        <svg
+          ref={svgRef}
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="-rotate-90"
+          aria-hidden="true"
+          focusable="false"
+        >
+          {/* Background circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={thickness}
+            className="text-muted/30"
+          />
 
-        {/* Data segments */}
-        {data.map((segment) => {
-          const percentage = segment.value / total;
-          const segmentLength = circumference * percentage * animationProgress;
-          const offset = currentOffset;
-          currentOffset += circumference * percentage;
+          {/* Data segments */}
+          {data.map((segment) => {
+            const percentage = segment.value / total;
+            const segmentLength = circumference * percentage * animationProgress;
+            const offset = currentOffset;
+            currentOffset += circumference * percentage;
 
-          return (
-            <circle
-              key={segment.domain}
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              fill="none"
-              stroke={DOMAIN_COLORS[segment.domain]}
-              strokeWidth={thickness}
-              strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
-              strokeDashoffset={-offset * animationProgress}
-              strokeLinecap="round"
-              className="transition-all duration-300"
-              style={{
-                filter: `drop-shadow(0 0 6px ${DOMAIN_COLORS[segment.domain]}40)`,
-              }}
-            />
-          );
-        })}
-      </svg>
+            return (
+              <circle
+                key={segment.domain}
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke={DOMAIN_COLORS[segment.domain]}
+                strokeWidth={thickness}
+                strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
+                strokeDashoffset={-offset * animationProgress}
+                strokeLinecap="round"
+                className="transition-all duration-300"
+                style={{
+                  filter: `drop-shadow(0 0 6px ${DOMAIN_COLORS[segment.domain]}40)`,
+                }}
+              />
+            );
+          })}
+        </svg>
 
-      {/* Center content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-display font-bold">{centerValue ?? total}</span>
-        <span className="text-sm text-muted-foreground">{centerLabel}</span>
+        {/* Center content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
+          <span className="text-3xl font-display font-bold">{centerValue ?? total}</span>
+          <span className="text-sm text-muted-foreground">{centerLabel}</span>
+        </div>
       </div>
+
+      {/* Visually-hidden data table for screen readers */}
+      <table className="sr-only">
+        <caption>Domain Distribution - {centerLabel}: {centerValue ?? total}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Domain</th>
+            <th scope="col">Value</th>
+            <th scope="col">Percentage</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((segment) => {
+            const pct = total > 0 ? Math.round((segment.value / total) * 100) : 0;
+            return (
+              <tr key={segment.domain}>
+                <td>{segment.label}</td>
+                <td>{segment.value}</td>
+                <td>{pct}%</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/Breadcrumb";
 
 interface Domain {
   id: string;
@@ -213,6 +214,13 @@ export default function AdminConstantsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Constants" },
+        ]}
+      />
+
       {/* Header */}
       <div>
         <h1 className="font-display text-3xl font-bold flex items-center gap-2">
