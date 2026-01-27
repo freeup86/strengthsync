@@ -50,11 +50,11 @@ docker compose --profile setup run migrate
 ### Key Directories
 - `src/app/` - Next.js App Router pages and API routes
 - `src/app/api/` - API endpoints organized by domain (auth, team, shoutouts, challenges, ai, admin, etc.)
-- `src/components/` - React components organized by domain (~18 subdirectories: `ui/`, `layout/`, `strengths/`, `team/`, `ai/`, `chat/`, `social/`, `gamification/`, `notifications/`, `admin/`, `charts/`, `brand/`, `effects/`, `onboarding/`, `providers/`, etc.)
+- `src/components/` - React components organized by domain (16 subdirectories: `ui/`, `layout/`, `strengths/`, `team/`, `ai/`, `chat/`, `gamification/`, `notifications/`, `admin/`, `charts/`, `brand/`, `effects/`, `onboarding/`, `providers/`, `social/`)
 - `src/lib/` - Utilities and services (see AI subsystem below)
 - `src/constants/strengths-data.ts` - All 34 CliftonStrengths themes and 4 domains (44KB, with descriptions, blind spots, keywords)
 - `src/types/index.ts` - TypeScript interfaces (SessionUser, MemberProfile, TeamComposition, StrengthBlend, ApplySection, etc.)
-- `prisma/schema.prisma` - Database schema (source of truth, 31 models)
+- `prisma/schema.prisma` - Database schema (source of truth, 32 models)
 
 ### AI Subsystem Architecture (`src/lib/ai/`)
 The AI layer is the most complex service module with 11 files:
@@ -70,12 +70,16 @@ The AI layer is the most complex service module with 11 files:
 ### Other Key Service Modules (`src/lib/`)
 - `prisma.ts` - Database client singleton (with dev logging)
 - `auth/config.ts` - NextAuth configuration with session type augmentations
+- `auth/permissions.ts` - Role-based access control helpers
 - `api/response.ts` - Standardized API response helpers
 - `pdf/parser.ts` - CliftonStrengths PDF extraction (parses all 34 ranked themes + personalization data)
+- `excel/gallup-parser.ts` - Gallup CliftonStrengths Excel file parser (alternative to PDF upload)
 - `email/` - Resend integration with weekly digest templates
 - `strengths/analytics.ts` - Team analytics calculations (domain balance, gaps, partnerships)
 - `storage/` - S3 file storage service
-- `gamification/` - Points, badges, and challenges logic
+- `gamification/badge-engine.ts` - Automated badge criteria evaluation and awarding
+- `integrations/teams-webhook.ts` - Microsoft Teams webhook utilities and Adaptive Card builders
+- `integrations/teams-bot-handlers.ts` - Teams bot command handlers and card rendering
 - `validation/` - Zod schema validation utilities
 
 ### CliftonStrengths Domain Colors (defined in `tailwind.config.ts`)
@@ -107,7 +111,7 @@ Four roles with tiered access:
 | **MEMBER** | All non-admin protected routes |
 
 **Admin-only routes** (OWNER/ADMIN — MANAGER cannot access):
-`/admin/members`, `/admin/import`, `/admin/constants`, `/admin/upload`
+`/admin/members`, `/admin/import`, `/admin/excel-import`, `/admin/constants`, `/admin/upload`
 
 **Manager routes** (OWNER/ADMIN/MANAGER):
 `/admin/dashboard`, `/admin/review-cycles`
@@ -227,7 +231,7 @@ await prisma.model.create({
 The sidebar is organized into sections:
 - **Primary**: Dashboard
 - **Me**: My Strengths, My Reviews, Mentorship
-- **Team**: Ask AI (`/chat`), Team Analytics, Directory, Leaderboard
+- **Team**: AI Coach (`/chat`), Team Analytics, Directory, Leaderboard
 - **Connect**: Feed, Shoutouts, Skill Marketplace, Challenges
 
 Manager-only items (OWNER/ADMIN/MANAGER): Manager Dashboard, Performance Reviews
@@ -347,7 +351,8 @@ RESEND_API_KEY  # For email features
 ## Key Features
 
 ### Strengths Upload
-- **Admin upload** (`/admin/upload`): Admins upload CliftonStrengths PDFs for any member
+- **Admin PDF upload** (`/admin/upload`): Admins upload CliftonStrengths PDFs for any member
+- **Admin Excel import** (`/admin/excel-import`): Admins import Gallup CliftonStrengths Excel files
 - **Self-service upload** (`/strengths/upload`): Members upload their own PDF
 - **Bulk import** (`/admin/import`): CSV/bulk member import
 
@@ -368,6 +373,13 @@ RESEND_API_KEY  # For email features
 - Cycles: QUARTERLY, SEMI_ANNUAL, ANNUAL, PROJECT, PROBATION
 - ReviewGoal with `alignedThemes` for strengths-based goals
 - ReviewEvidence links to shoutouts, mentorship, challenges
+
+### Microsoft Teams Integration
+- **Admin config**: `/admin/integrations/` page for webhook URL setup and testing
+- **Bot API**: `/api/integrations/teams-bot` handles Teams bot interactions
+- **Admin API**: `/api/admin/integrations/teams` for webhook configuration (GET/PATCH/POST)
+- **User mapping**: `TeamsUserMapping` model links Teams user IDs to internal users
+- **Adaptive Cards**: Teams webhook sends rich card notifications for shoutouts, badges, etc.
 
 ## AI Integration
 
@@ -435,12 +447,22 @@ Partnership reasoning (expensive AI calls) is cached in `PartnershipReasoning` m
 ### Audit Trail
 All significant operations log to the `AuditLog` model with action, entity type/ID, actor, and metadata. AI token usage is separately tracked in `AIUsageLog` with per-request token counts and costs.
 
+### Badge Engine (`src/lib/gamification/badge-engine.ts`)
+Automated badge evaluation runs after point-awarding actions:
+1. Action triggers point award on `OrganizationMember.points`
+2. Badge engine checks all `Badge` criteria against member's current stats
+3. New badges → `BadgeEarned` records created
+4. `BadgeCelebrationProvider` (global React context) triggers celebration UI
+5. `BadgeProgress` component shows progress toward next badges
+
 ## Admin API Endpoints
 
 In addition to the admin UI routes documented in the RBAC section above:
 - `/api/admin/ai/prompts` - Manage AI prompt templates (`AIPromptTemplate` model)
 - `/api/admin/ai/usage` - Monitor token usage and costs (`AIUsageLog` model)
 - `/api/admin/health-metrics` - Organization health dashboard metrics
+- `/api/admin/integrations/teams` - Configure Teams webhook URL and test connectivity
+- `/api/admin/constants` - Manage strength constants and domain data
 
 ## NextAuth Session Type
 
@@ -479,11 +501,14 @@ Default credentials: `postgres/postgres`, database `strengthsync` (configurable 
 
 | File | Purpose |
 |------|---------|
-| `prisma/schema.prisma` | Database schema (source of truth) |
+| `prisma/schema.prisma` | Database schema (source of truth, 32 models) |
 | `src/lib/auth/config.ts` | NextAuth config with session type augmentations |
 | `src/lib/api/response.ts` | Standardized API response helpers |
 | `src/lib/prisma.ts` | Prisma client singleton |
 | `src/constants/strengths-data.ts` | All 34 themes, 4 domains, blind spots, keywords |
 | `src/middleware.ts` | Route protection and role-based access logic |
 | `src/components/layout/DashboardLayout.tsx` | Main navigation wrapper with role-aware sidebar |
+| `src/lib/gamification/badge-engine.ts` | Automated badge criteria evaluation |
+| `src/lib/integrations/teams-webhook.ts` | Teams webhook and Adaptive Card builders |
+| `src/lib/excel/gallup-parser.ts` | Gallup CliftonStrengths Excel parser |
 | `tailwind.config.ts` | Domain colors and custom animations |

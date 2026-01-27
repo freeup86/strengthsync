@@ -36,11 +36,11 @@ interface ConversationSummary {
 }
 
 const SUGGESTED_QUESTIONS = [
-  "How can I better leverage my top strengths at work?",
-  "Who should I partner with on my next project?",
-  "What are my team's blind spots and how can we address them?",
-  "Who should I recognize for their contributions this week?",
-  "What mentorship opportunities would benefit me most?",
+  "How can I use my top strengths to grow as a leader?",
+  "What development areas should I focus on this quarter?",
+  "Who should I partner with to complement my strengths?",
+  "How can I manage my blind spots more effectively?",
+  "What daily habits align with my strengths profile?",
 ];
 
 const SIDEBAR_COLLAPSED_KEY = "chat-sidebar-collapsed";
@@ -440,11 +440,11 @@ export default function ChatPage() {
         <div className="flex-1 min-w-0">
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
             <Bot className="h-7 w-7 text-domain-strategic shrink-0" />
-            <span className="truncate">StrengthSync AI</span>
+            <span className="truncate">AI Coach</span>
           </h1>
           <p className="text-muted-foreground text-sm">
-            Ask questions about your team&apos;s strengths, find collaborators, or
-            learn about CliftonStrengths
+            Your personal strengths-based development coach — grow your skills,
+            navigate blind spots, and unlock your potential
           </p>
         </div>
       </div>
@@ -476,11 +476,12 @@ export default function ChatPage() {
               <div className="h-full flex flex-col items-center justify-center text-center px-4">
                 <Sparkles className="h-10 w-10 text-domain-strategic mb-4" />
                 <h2 className="text-lg font-semibold mb-2">
-                  How can I help you today?
+                  What would you like to work on?
                 </h2>
                 <p className="text-sm text-muted-foreground mb-6 max-w-md">
-                  I can help you explore your team&apos;s strengths, find the right
-                  collaborators, and understand CliftonStrengths themes.
+                  I&apos;m your strengths-based development coach. Ask me about personal
+                  growth, team collaboration, blind spots, or how to apply your
+                  CliftonStrengths in everyday work.
                 </p>
 
                 <div className="flex flex-wrap gap-2 justify-center max-w-lg">
@@ -593,7 +594,7 @@ export default function ChatPage() {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask about your team's strengths..."
+                  placeholder="Ask your coach anything about strengths, growth, or collaboration..."
                   rows={1}
                   className="w-full px-4 py-3 pr-12 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none min-h-[48px] max-h-32"
                   disabled={isLoading}
@@ -615,7 +616,7 @@ export default function ChatPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              AI responses are generated based on your team&apos;s data
+              Coaching insights are personalized to your strengths profile and team data
             </p>
           </div>
         </Card>

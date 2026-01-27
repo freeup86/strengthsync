@@ -58,7 +58,7 @@ const navigationSections = [
   {
     label: "Team",
     items: [
-      { name: "Ask AI", href: "/chat", icon: Bot },
+      { name: "AI Coach", href: "/chat", icon: Bot },
       { name: "Team Analytics", href: "/team", icon: Users },
       { name: "Directory", href: "/directory", icon: Search },
       { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
