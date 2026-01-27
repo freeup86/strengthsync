@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       allMembers,
       recentShoutouts,
       shoutoutsCount,
+      actionableRequests,
     ] = await Promise.all([
       // Get current user's member data with strengths
       memberId
@@ -96,6 +97,25 @@ export async function GET(request: NextRequest) {
           createdAt: { gte: oneWeekAgo },
         },
       }),
+
+      // Actionable skill requests: OPEN, not created by me, and I haven't responded to
+      memberId
+        ? prisma.skillRequest.findMany({
+            where: {
+              organizationId,
+              status: "OPEN",
+              creatorId: { not: memberId },
+              responses: { none: { responderId: memberId } },
+            },
+            include: {
+              creator: { include: { user: { select: { fullName: true } } } },
+              theme: { include: { domain: true } },
+              _count: { select: { responses: true } },
+            },
+            orderBy: [{ urgency: "desc" }, { createdAt: "desc" }],
+            take: 5,
+          })
+        : [],
     ]);
 
     // Process my strengths
@@ -164,6 +184,20 @@ export async function GET(request: NextRequest) {
     const myPoints = myMember?.points || 0;
     const myStreak = myMember?.streak || 0;
 
+    // Format actionable skill requests
+    const formattedSkillRequests = actionableRequests.map((r) => ({
+      id: r.id,
+      title: r.title,
+      urgency: r.urgency,
+      domainNeeded: r.domainNeeded,
+      creator: { name: r.creator.user.fullName || "Unknown" },
+      theme: r.theme
+        ? { name: r.theme.name, domain: { slug: r.theme.domain.slug } }
+        : null,
+      responseCount: r._count.responses,
+      createdAt: r.createdAt.toISOString(),
+    }));
+
     return apiSuccess({
       myStrengths,
       teamStats: {
@@ -175,6 +209,7 @@ export async function GET(request: NextRequest) {
       suggestedPartner,
       myPoints,
       myStreak,
+      actionableSkillRequests: formattedSkillRequests,
     });
   } catch (error) {
     console.error("Error fetching dashboard data:", error);

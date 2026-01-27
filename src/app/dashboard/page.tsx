@@ -16,7 +16,6 @@ import {
   Users,
   MessageSquare,
   Trophy,
-  Flame,
   ArrowRight,
   Sparkles,
   TrendingUp,
@@ -24,6 +23,9 @@ import {
   Zap,
   Handshake,
   RefreshCw,
+  HandHelping,
+  AlertCircle,
+  Clock,
 } from "lucide-react";
 import type { DomainSlug } from "@/constants/strengths-data";
 
@@ -55,6 +57,16 @@ interface DashboardData {
   };
   myPoints: number;
   myStreak: number;
+  actionableSkillRequests: {
+    id: string;
+    title: string;
+    urgency: string;
+    domainNeeded: string | null;
+    creator: { name: string };
+    theme: { name: string; domain: { slug: string } } | null;
+    responseCount: number;
+    createdAt: string;
+  }[];
 }
 
 const WELCOME_STEPS = [
@@ -168,77 +180,68 @@ export default function DashboardPage() {
 
       {/* Stats cards */}
       <ScrollRevealGroup staggerDelay={100}>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <ScrollReveal animation="fade-up">
-            <Card className="card-interactive h-full">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Team Members</p>
-                    <p className="text-3xl font-display font-bold mt-1">
-                      {loading ? "-" : data?.teamStats.totalMembers || 0}
-                    </p>
+            <Link href="/directory" className="block h-full">
+              <Card className="card-interactive h-full cursor-pointer">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Team Members</p>
+                      <p className="text-3xl font-display font-bold mt-1">
+                        {loading ? "-" : data?.teamStats.totalMembers || 0}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-domain-relationship/10">
+                      <Users className="h-6 w-6 text-domain-relationship" />
+                    </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-domain-relationship/10">
-                    <Users className="h-6 w-6 text-domain-relationship" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           </ScrollReveal>
 
           <ScrollReveal animation="fade-up">
-            <Card className="card-interactive h-full">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Shoutouts This Week</p>
-                    <p className="text-3xl font-display font-bold mt-1">
-                      {loading ? "-" : data?.teamStats.shoutoutsThisWeek || 0}
-                    </p>
+            <Link href="/shoutouts" className="block h-full">
+              <Card className="card-interactive h-full cursor-pointer">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Shoutouts This Week</p>
+                      <p className="text-3xl font-display font-bold mt-1">
+                        {loading ? "-" : data?.teamStats.shoutoutsThisWeek || 0}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-domain-influencing/10">
+                      <MessageSquare className="h-6 w-6 text-domain-influencing" />
+                    </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-domain-influencing/10">
-                    <MessageSquare className="h-6 w-6 text-domain-influencing" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           </ScrollReveal>
 
           <ScrollReveal animation="fade-up">
-            <Card className="card-interactive h-full">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Your Streak</p>
-                    <p className="text-3xl font-display font-bold mt-1">
-                      {loading ? "-" : `${data?.myStreak || 0} days`}
-                    </p>
+            <Link href="/leaderboard" className="block h-full">
+              <Card className="card-interactive h-full cursor-pointer">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Your Progress</p>
+                      <p className="text-3xl font-display font-bold mt-1">
+                        {loading ? "-" : `${(data?.myPoints || 0).toLocaleString()} pts`}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        🔥 {loading ? "-" : data?.myStreak || 0} day streak
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-amber-500/10">
+                      <Trophy className="h-6 w-6 text-amber-500" />
+                    </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-orange-500/10">
-                    <Flame className="h-6 w-6 text-orange-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </ScrollReveal>
-
-          <ScrollReveal animation="fade-up">
-            <Card className="card-interactive h-full">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Your Points</p>
-                    <p className="text-3xl font-display font-bold mt-1">
-                      {loading ? "-" : (data?.myPoints || 0).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-amber-500/10">
-                    <Trophy className="h-6 w-6 text-amber-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           </ScrollReveal>
         </div>
       </ScrollRevealGroup>
@@ -359,6 +362,86 @@ export default function DashboardPage() {
                       Give Shoutout
                     </Link>
                   </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Skill Requests */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <HandHelping className="h-5 w-5 text-domain-strategic" />
+                  <CardTitle>Skill Requests</CardTitle>
+                </div>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/marketplace">
+                    View All
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
+              <CardDescription>Open requests you can help with</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {data?.actionableSkillRequests && data.actionableSkillRequests.length > 0 ? (
+                <div className="space-y-3">
+                  {data.actionableSkillRequests.slice(0, 3).map((request) => (
+                    <Link
+                      key={request.id}
+                      href={`/marketplace/${request.id}`}
+                      className="block p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-medium text-sm truncate">
+                              {request.title}
+                            </h4>
+                            {request.urgency === "URGENT" && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                <AlertCircle className="h-3 w-3" />
+                                Urgent
+                              </span>
+                            )}
+                            {request.urgency === "HIGH" && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                                <AlertCircle className="h-3 w-3" />
+                                High
+                              </span>
+                            )}
+                            {request.urgency === "LOW" && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                <Clock className="h-3 w-3" />
+                                Low
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+                            <span>by {request.creator.name}</span>
+                            <span>·</span>
+                            <span>{request.responseCount} {request.responseCount === 1 ? "response" : "responses"}</span>
+                          </div>
+                        </div>
+                        {request.theme && (
+                          <ThemeBadge
+                            themeName={request.theme.name}
+                            domainSlug={request.theme.domain.slug as DomainSlug}
+                            size="sm"
+                          />
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <HandHelping className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                  <h4 className="font-medium">No Open Requests</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    No open requests right now — check back later!
+                  </p>
                 </div>
               )}
             </CardContent>

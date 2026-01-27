@@ -38,6 +38,9 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 
 docker-compose up -d     # Start PostgreSQL
 docker-compose down      # Stop services
+
+# First-time Docker setup: run migrations + seed
+docker compose --profile setup run migrate
 ```
 
 **Note**: No test framework configured. Use manual testing and `npm run type-check`.
@@ -57,6 +60,12 @@ docker-compose down      # Stop services
   - `social/` - Shoutouts, SkillRequests, Feed components
   - `gamification/` - Badges, Leaderboards, Challenges
   - `notifications/` - NotificationBell, RecognitionPrompt
+  - `admin/` - Admin-specific UI components
+  - `charts/` - Chart/visualization components
+  - `brand/` - Brand/logo components
+  - `effects/` - Animation/effects components
+  - `onboarding/` - Onboarding/setup flow components
+  - `providers/` - React context providers
 - `src/lib/` - Utilities and services:
   - `prisma.ts` - Database client singleton
   - `auth/config.ts` - NextAuth configuration with type augmentations
@@ -66,6 +75,8 @@ docker-compose down      # Stop services
   - `email/` - Resend email service and digest templates
   - `strengths/analytics.ts` - Team analytics calculations
   - `storage/` - S3 file storage service
+  - `gamification/` - Points, badges, and challenges logic
+  - `validation/` - Zod schema validation utilities
 - `src/constants/strengths-data.ts` - All 34 CliftonStrengths themes and 4 domains with descriptions, blind spots, keywords
 - `src/types/index.ts` - TypeScript interfaces (SessionUser, MemberProfile, TeamComposition, etc.)
 - `prisma/schema.prisma` - Database schema (source of truth for models)
@@ -452,6 +463,21 @@ session.user = {
 ```
 
 Type augmentations are defined in `src/lib/auth/config.ts`.
+
+## Next.js Configuration (`next.config.ts`)
+
+- **Server Actions**: `bodySizeLimit` set to `10mb` (for PDF uploads and large payloads)
+- **Images**: All HTTPS remote patterns allowed (`hostname: "**"`)
+- **Version Exposure**: `NEXT_PUBLIC_APP_VERSION` and `NEXT_PUBLIC_BUILD_TIME` injected from `package.json` at build time
+
+## Docker Architecture
+
+Three services in `docker-compose.yml`:
+- **db**: PostgreSQL 15 Alpine with health checks (port 5432)
+- **app**: Next.js application (port 3000), depends on healthy db
+- **migrate**: One-shot service (`prisma db push` + seed) under the `setup` profile — run with `docker compose --profile setup run migrate`
+
+Default credentials: `postgres/postgres`, database `strengthsync` (configurable via env vars `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`).
 
 ## Quick Reference: Key Files
 
