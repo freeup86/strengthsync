@@ -28,19 +28,6 @@ export interface RateLimitResult {
   reason?: string;
 }
 
-// In-memory rate limiting store (for quick checks)
-// In production, consider using Redis for distributed rate limiting
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
-
-// Get rate limit key
-function getRateLimitKey(
-  type: "user" | "organization",
-  id: string,
-  window: "minute" | "hour" | "day"
-): string {
-  return `ratelimit:${type}:${id}:${window}`;
-}
-
 // Get window duration in milliseconds
 function getWindowDuration(window: "minute" | "hour" | "day"): number {
   switch (window) {
@@ -53,90 +40,55 @@ function getWindowDuration(window: "minute" | "hour" | "day"): number {
   }
 }
 
-// Check and update in-memory rate limit
-function checkMemoryLimit(
-  key: string,
-  limit: number,
-  windowMs: number
-): { count: number; resetAt: number } {
-  const now = Date.now();
-  const existing = rateLimitStore.get(key);
-
-  if (!existing || existing.resetAt <= now) {
-    // Window expired or doesn't exist, create new
-    const data = { count: 1, resetAt: now + windowMs };
-    rateLimitStore.set(key, data);
-    return data;
-  }
-
-  // Increment existing counter
-  existing.count += 1;
-  rateLimitStore.set(key, existing);
-  return existing;
-}
-
-// Clean up expired entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of rateLimitStore.entries()) {
-    if (value.resetAt <= now) {
-      rateLimitStore.delete(key);
-    }
-  }
-}, 60 * 1000); // Clean every minute
-
-// Check rate limit for a user
+// Check rate limit for a user. Counts are read from AIUsageLog (rather than an
+// in-memory Map) so the limit holds across serverless instances, which don't
+// share memory. Counts every logged request regardless of success/failure —
+// mirrors the original in-memory counter, which incremented on every check
+// regardless of how the underlying AI call turned out.
 export async function checkUserRateLimit(
   memberId: string,
   organizationId: string
 ): Promise<RateLimitResult> {
-  // Check per-minute limit
-  const minuteKey = getRateLimitKey("user", memberId, "minute");
-  const minuteData = checkMemoryLimit(
-    minuteKey,
-    RATE_LIMITS.user.requestsPerMinute,
-    getWindowDuration("minute")
-  );
+  const now = Date.now();
+  const minuteMs = getWindowDuration("minute");
+  const hourMs = getWindowDuration("hour");
+  const dayMs = getWindowDuration("day");
 
-  if (minuteData.count > RATE_LIMITS.user.requestsPerMinute) {
+  const [minuteCount, hourCount, dayCount] = await Promise.all([
+    prisma.aIUsageLog.count({
+      where: { memberId, createdAt: { gte: new Date(now - minuteMs) } },
+    }),
+    prisma.aIUsageLog.count({
+      where: { memberId, createdAt: { gte: new Date(now - hourMs) } },
+    }),
+    prisma.aIUsageLog.count({
+      where: { memberId, createdAt: { gte: new Date(now - dayMs) } },
+    }),
+  ]);
+
+  if (minuteCount >= RATE_LIMITS.user.requestsPerMinute) {
     return {
       allowed: false,
       remaining: 0,
-      resetAt: new Date(minuteData.resetAt),
+      resetAt: new Date(now + minuteMs),
       reason: "Rate limit exceeded: too many requests per minute",
     };
   }
 
-  // Check per-hour limit
-  const hourKey = getRateLimitKey("user", memberId, "hour");
-  const hourData = checkMemoryLimit(
-    hourKey,
-    RATE_LIMITS.user.requestsPerHour,
-    getWindowDuration("hour")
-  );
-
-  if (hourData.count > RATE_LIMITS.user.requestsPerHour) {
+  if (hourCount >= RATE_LIMITS.user.requestsPerHour) {
     return {
       allowed: false,
       remaining: 0,
-      resetAt: new Date(hourData.resetAt),
+      resetAt: new Date(now + hourMs),
       reason: "Rate limit exceeded: too many requests per hour",
     };
   }
 
-  // Check per-day limit
-  const dayKey = getRateLimitKey("user", memberId, "day");
-  const dayData = checkMemoryLimit(
-    dayKey,
-    RATE_LIMITS.user.requestsPerDay,
-    getWindowDuration("day")
-  );
-
-  if (dayData.count > RATE_LIMITS.user.requestsPerDay) {
+  if (dayCount >= RATE_LIMITS.user.requestsPerDay) {
     return {
       allowed: false,
       remaining: 0,
-      resetAt: new Date(dayData.resetAt),
+      resetAt: new Date(now + dayMs),
       reason: "Rate limit exceeded: daily limit reached",
     };
   }
@@ -150,65 +102,59 @@ export async function checkUserRateLimit(
   return {
     allowed: true,
     remaining: Math.min(
-      RATE_LIMITS.user.requestsPerMinute - minuteData.count,
-      RATE_LIMITS.user.requestsPerHour - hourData.count,
-      RATE_LIMITS.user.requestsPerDay - dayData.count
+      RATE_LIMITS.user.requestsPerMinute - minuteCount,
+      RATE_LIMITS.user.requestsPerHour - hourCount,
+      RATE_LIMITS.user.requestsPerDay - dayCount
     ),
-    resetAt: new Date(minuteData.resetAt),
+    resetAt: new Date(now + minuteMs),
   };
 }
 
-// Check rate limit for an organization
+// Check rate limit for an organization. Same AIUsageLog-backed approach as
+// checkUserRateLimit above.
 export async function checkOrganizationRateLimit(
   organizationId: string
 ): Promise<RateLimitResult> {
-  // Check per-minute limit
-  const minuteKey = getRateLimitKey("organization", organizationId, "minute");
-  const minuteData = checkMemoryLimit(
-    minuteKey,
-    RATE_LIMITS.organization.requestsPerMinute,
-    getWindowDuration("minute")
-  );
+  const now = Date.now();
+  const minuteMs = getWindowDuration("minute");
+  const hourMs = getWindowDuration("hour");
+  const dayMs = getWindowDuration("day");
 
-  if (minuteData.count > RATE_LIMITS.organization.requestsPerMinute) {
+  const [minuteCount, hourCount, dayCount] = await Promise.all([
+    prisma.aIUsageLog.count({
+      where: { organizationId, createdAt: { gte: new Date(now - minuteMs) } },
+    }),
+    prisma.aIUsageLog.count({
+      where: { organizationId, createdAt: { gte: new Date(now - hourMs) } },
+    }),
+    prisma.aIUsageLog.count({
+      where: { organizationId, createdAt: { gte: new Date(now - dayMs) } },
+    }),
+  ]);
+
+  if (minuteCount >= RATE_LIMITS.organization.requestsPerMinute) {
     return {
       allowed: false,
       remaining: 0,
-      resetAt: new Date(minuteData.resetAt),
+      resetAt: new Date(now + minuteMs),
       reason: "Organization rate limit exceeded: too many requests per minute",
     };
   }
 
-  // Check per-hour limit
-  const hourKey = getRateLimitKey("organization", organizationId, "hour");
-  const hourData = checkMemoryLimit(
-    hourKey,
-    RATE_LIMITS.organization.requestsPerHour,
-    getWindowDuration("hour")
-  );
-
-  if (hourData.count > RATE_LIMITS.organization.requestsPerHour) {
+  if (hourCount >= RATE_LIMITS.organization.requestsPerHour) {
     return {
       allowed: false,
       remaining: 0,
-      resetAt: new Date(hourData.resetAt),
+      resetAt: new Date(now + hourMs),
       reason: "Organization rate limit exceeded: too many requests per hour",
     };
   }
 
-  // Check per-day limit
-  const dayKey = getRateLimitKey("organization", organizationId, "day");
-  const dayData = checkMemoryLimit(
-    dayKey,
-    RATE_LIMITS.organization.requestsPerDay,
-    getWindowDuration("day")
-  );
-
-  if (dayData.count > RATE_LIMITS.organization.requestsPerDay) {
+  if (dayCount >= RATE_LIMITS.organization.requestsPerDay) {
     return {
       allowed: false,
       remaining: 0,
-      resetAt: new Date(dayData.resetAt),
+      resetAt: new Date(now + dayMs),
       reason: "Organization rate limit exceeded: daily limit reached",
     };
   }
@@ -216,11 +162,11 @@ export async function checkOrganizationRateLimit(
   return {
     allowed: true,
     remaining: Math.min(
-      RATE_LIMITS.organization.requestsPerMinute - minuteData.count,
-      RATE_LIMITS.organization.requestsPerHour - hourData.count,
-      RATE_LIMITS.organization.requestsPerDay - dayData.count
+      RATE_LIMITS.organization.requestsPerMinute - minuteCount,
+      RATE_LIMITS.organization.requestsPerHour - hourCount,
+      RATE_LIMITS.organization.requestsPerDay - dayCount
     ),
-    resetAt: new Date(minuteData.resetAt),
+    resetAt: new Date(now + minuteMs),
   };
 }
 
