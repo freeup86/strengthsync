@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { TurnContext } from "botbuilder";
+import type {
+  ActivityHandler as ActivityHandlerType,
+  CloudAdapter as CloudAdapterType,
+  Request as BotFrameworkRequest,
+  Response as BotFrameworkResponse,
+  TurnContext,
+} from "botbuilder";
 import { handleTeamsBotCommand } from "@/lib/integrations/teams-bot-handlers";
 
 /**
@@ -18,10 +24,15 @@ import { handleTeamsBotCommand } from "@/lib/integrations/teams-bot-handlers";
  * from botbuilder when environment variables are not yet available.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _adapter: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _bot: any = null;
+type BotFrameworkRequestShim = BotFrameworkRequest & { url: string };
+type BotFrameworkResponseShim = BotFrameworkResponse & {
+  setHeader(name: string, value: unknown): unknown;
+  writeHead(statusCode: number): unknown;
+  write(data: unknown): boolean;
+};
+
+let _adapter: CloudAdapterType | null = null;
+let _bot: ActivityHandlerType | null = null;
 
 function getAdapterAndBot() {
   if (_adapter && _bot) return { adapter: _adapter, bot: _bot };
@@ -31,7 +42,7 @@ function getAdapterAndBot() {
     ConfigurationBotFrameworkAuthentication,
     ActivityHandler,
     CardFactory,
-  } = require("botbuilder");
+  }: typeof import("botbuilder") = require("botbuilder");
 
   const botFrameworkAuth = new ConfigurationBotFrameworkAuthentication({
     MicrosoftAppId: process.env.MICROSOFT_APP_ID || "",
@@ -126,12 +137,12 @@ export async function POST(request: NextRequest) {
 
     const { adapter, bot } = getAdapterAndBot();
 
-    const body = await request.json();
+    const body: Record<string, unknown> = await request.json();
     const authHeader = request.headers.get("authorization") || "";
 
     // Bridge Next.js App Router Request to Bot Framework compatible format.
     // CloudAdapter.process expects a Node-style Request with a body property.
-    const shimRequest = {
+    const shimRequest: BotFrameworkRequestShim = {
       body,
       headers: {
         authorization: authHeader,
@@ -144,27 +155,34 @@ export async function POST(request: NextRequest) {
     // Shim response to collect status/body
     let responseStatus = 200;
     let responseBody = "";
-    const shimResponse = {
+    const shimResponse: BotFrameworkResponseShim = {
+      socket: null,
       status: (code: number) => {
         responseStatus = code;
         return shimResponse;
       },
-      send: (data: string) => {
-        responseBody = data;
+      send: (...args: unknown[]) => {
+        responseBody = args[0] == null ? "" : String(args[0]);
         return shimResponse;
       },
-      end: () => shimResponse,
+      end: (...args: unknown[]) => {
+        if (args[0] != null) responseBody += String(args[0]);
+        return shimResponse;
+      },
+      header: () => shimResponse,
       setHeader: () => shimResponse,
-      writeHead: () => shimResponse,
-      write: (data: string) => {
-        responseBody = data;
+      writeHead: (statusCode: number) => {
+        responseStatus = statusCode;
+        return shimResponse;
+      },
+      write: (data: unknown) => {
+        responseBody += String(data);
         return true;
       },
     };
 
     // Process the Bot Framework activity
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (adapter as any).process(
+    await adapter.process(
       shimRequest,
       shimResponse,
       async (context: TurnContext) => {

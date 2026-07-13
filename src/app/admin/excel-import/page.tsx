@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
@@ -69,11 +69,13 @@ export default function ExcelImportPage() {
 
   const isAdmin = session?.user?.role === "OWNER" || session?.user?.role === "ADMIN";
 
-  // Redirect non-admins
-  if (!isAdmin && session) {
-    router.replace("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (!isAdmin && session) {
+      router.replace("/dashboard");
+    }
+  }, [isAdmin, router, session]);
+
+  if (!isAdmin && session) return null;
 
   const handleFile = async (selectedFile: File) => {
     setFile(selectedFile);
@@ -108,7 +110,7 @@ export default function ExcelImportPage() {
     }
   };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
 
@@ -118,7 +120,7 @@ export default function ExcelImportPage() {
     } else {
       setError("Please drop an .xlsx or .xls file");
     }
-  }, []);
+  };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
