@@ -1,3 +1,11 @@
+// xlsx (SheetJS) 0.18.5 is the last npm-registry release and has two open
+// advisories with no registry fix: Prototype Pollution (GHSA-4r6h-8v6p-xvw6)
+// and ReDoS (GHSA-5pgg-2g8v-p4x9). Risk is contained here: the only caller,
+// src/app/api/admin/members/excel-import/route.ts, requires an authenticated
+// OWNER/ADMIN session, validates file type/extension, and caps upload size at
+// 10MB before this parser runs. Follow-up options if this needs to be fully
+// resolved: move to SheetJS's maintained CDN build (https://cdn.sheetjs.com)
+// or migrate this parser to a maintained library such as `exceljs`.
 import * as XLSX from "xlsx";
 import { THEMES } from "@/constants/strengths-data";
 
