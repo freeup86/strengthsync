@@ -33,6 +33,12 @@ export function assertLocalDatabaseUrl(rawUrl) {
     );
   }
 
+  if (parsed.search !== "") {
+    throw new LocalDatabaseSafetyError(
+      "DATABASE_URL query parameters are not allowed for local database commands."
+    );
+  }
+
   const hostname = parsed.hostname.toLowerCase();
   if (!LOOPBACK_HOSTS.has(hostname)) {
     throw new LocalDatabaseSafetyError(
