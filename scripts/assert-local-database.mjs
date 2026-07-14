@@ -57,6 +57,16 @@ export function assertConfirmation(args, requiredFlag) {
   }
 }
 
+export function buildLocalComposeDownArgs({ includeVolumes = false } = {}) {
+  return [
+    "compose",
+    "--env-file",
+    ".env",
+    "down",
+    ...(includeVolumes ? ["--volumes"] : []),
+  ];
+}
+
 function run(command, args) {
   const result = spawnSync(command, args, {
     env: process.env,
@@ -99,7 +109,7 @@ export function main(args = process.argv.slice(2)) {
       return;
     case "destroy":
       assertConfirmation(actionArgs, "--confirm-local-destroy");
-      run("docker", ["compose", "--env-file", ".env.example", "down", "--volumes"]);
+      run("docker", buildLocalComposeDownArgs({ includeVolumes: true }));
       return;
     default:
       throw new LocalDatabaseSafetyError(

@@ -1,11 +1,41 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import {
+import * as localDatabase from "./assert-local-database.mjs";
+
+const {
   LocalDatabaseSafetyError,
   assertConfirmation,
   assertLocalDatabaseUrl,
-} from "./assert-local-database.mjs";
+} = localDatabase;
+
+test("local Compose lifecycle scripts use the root local environment file", async () => {
+  const packageJson = JSON.parse(
+    await readFile(new URL("../package.json", import.meta.url), "utf8")
+  );
+
+  for (const scriptName of ["db:local:up", "db:local:down"]) {
+    const script = packageJson.scripts[scriptName];
+    assert.match(script, /--env-file \.env(?:\s|$)/);
+    assert.equal(script.includes(".env.example"), false);
+  }
+});
+
+test("guarded destroy Compose command uses the root local environment file", () => {
+  const args =
+    typeof localDatabase.buildLocalComposeDownArgs === "function"
+      ? localDatabase.buildLocalComposeDownArgs({ includeVolumes: true })
+      : undefined;
+
+  assert.deepEqual(args, [
+    "compose",
+    "--env-file",
+    ".env",
+    "down",
+    "--volumes",
+  ]);
+});
 
 const acceptedUrls = [
   "postgresql://strengthsync_local:strengthsync_local_dev@localhost:5432/strengthsync_local",
