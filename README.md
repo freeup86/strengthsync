@@ -76,7 +76,7 @@ npm run db:local:destroy -- --confirm-local-destroy
 - `db:local:setup` prepares the local database for application development.
 - `db:migrate` creates and applies development migrations with `prisma migrate dev`.
 - `db:seed` is reference-only. Create application organizations and users through the UI or API.
-- `db:local:reset` and `db:local:destroy` require their explicit confirmation flags to protect non-local databases.
+- The reset and destroy confirmation flags prevent accidental destructive operations on the local database, while the loopback guard blocks non-local targets.
 - `db:local:down` stops the container while retaining the disposable local volume; `db:local:destroy` removes it.
 
 ### Production diagnostics
@@ -98,7 +98,7 @@ npm run lint           # Run ESLint
 npm run type-check     # TypeScript type checking
 ```
 
-Phase 3 adds repository commit protection for PostgreSQL URLs. Install those hooks after Phase 3 is available:
+Install the repository commit protection for PostgreSQL URLs:
 
 ```bash
 npm run hooks:install

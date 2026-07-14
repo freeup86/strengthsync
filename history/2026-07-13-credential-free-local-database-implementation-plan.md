@@ -493,16 +493,19 @@ Stop and request explicit approval for Phase 2. Do not push.
 
 **Approval gate:** Start only after explicit Phase 2 approval.
 
-**Files (exactly four):**
+**Files (exactly five):**
 
 - Modify ignored local file: `.env`
 - Modify ignored local file: `.mcp.json`
 - Create tracked file: `.mcp.example.json`
 - Modify tracked file: `README.md`
+- Modify tracked implementation record: `history/2026-07-13-credential-free-local-database-implementation-plan.md`
+
+**Approved Phase 2 plan amendment:** Review expanded this phase from four to five files so the plan itself records the supported MCP package and final reviewed workflow. The configuration remains within the five-file maximum.
 
 ## Task 6: Claim the Phase 2 Beads issue
 
-Claim `strengthsync-kdx` and commit Beads state exactly as in Phase 1. The tracker commit is outside the four-file source/configuration phase.
+Claim `strengthsync-kdx` and commit Beads state exactly as in Phase 1. The tracker commit is outside the five-file source/configuration phase.
 
 ## Task 7: Remove the Render URL from persistent local configuration
 
@@ -512,7 +515,7 @@ Run only hostname-safe checks:
 
 ```bash
 node --env-file=.env -e 'const value=process.env.DATABASE_URL; const host=value ? new URL(value).hostname : "missing"; console.log(`DATABASE_URL host: ${host}`)'
-node -e 'const fs=require("fs"); const value=JSON.parse(fs.readFileSync(".mcp.json","utf8")); const url=value.mcpServers.postgres.args.find((arg)=>/^postgres(?:ql)?:\/\//.test(arg)); console.log(`MCP PostgreSQL host: ${new URL(url).hostname}`)'
+node -e 'const fs=require("fs"); const value=JSON.parse(fs.readFileSync(".mcp.json","utf8")); const raw=value.mcpServers.postgres.env?.DATABASE_URL; const host=raw ? new URL(raw).hostname : "missing"; console.log("MCP PostgreSQL host: " + host)'
 ```
 
 Expected before editing: both report a Render host but never print usernames, passwords, or complete URLs.
@@ -533,6 +536,16 @@ Do not copy optional keys from `.env.example` over populated local integration v
 
 ### Step 3: Rewrite `.mcp.json` and add `.mcp.example.json`
 
+Use the pinned `@yawlabs/postgres-mcp@0.6.20` package listed in the official MCP Registry. It is read-only by default: do not set `ALLOW_WRITES`. Pass the local connection through the MCP `env` block, never as a command argument.
+
+Verify the approved package exists:
+
+```bash
+npm view @yawlabs/postgres-mcp@0.6.20 version
+```
+
+Expected exact output: `0.6.20`.
+
 Both files must contain:
 
 ```json
@@ -542,9 +555,11 @@ Both files must contain:
       "command": "npx",
       "args": [
         "-y",
-        "@anthropic-ai/mcp-server-postgres",
-        "postgresql://strengthsync_local:strengthsync_local_dev@127.0.0.1:5432/strengthsync_local"
-      ]
+        "@yawlabs/postgres-mcp@0.6.20"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://strengthsync_local:strengthsync_local_dev@127.0.0.1:5432/strengthsync_local"
+      }
     }
   }
 }
@@ -603,7 +618,7 @@ npm run db:prod:console
 
 - State explicitly that local `.env` and `.mcp.json` must never contain a Render PostgreSQL URL, `render psql` is the only supported local production database path, the seed is reference-only, and application organizations/users must be created through the UI/API.
 - State that PostgreSQL publishes only on `127.0.0.1` and the Docker volume is disposable.
-- Document `npm run hooks:install` as the Phase 3 commit-protection setup command; the command becomes available before the documentation phase is considered fully delivered.
+- Document `npm run hooks:install` directly as the repository commit-protection setup command.
 - Remove PostgreSQL as a host-installed prerequisite, all `docker-compose` syntax, app/migrate Compose instructions, `REDIS_URL`, “future” placeholders, and the misleading “production” label on `prisma migrate dev`.
 
 ### Step 2: Verify README claims against commands
@@ -670,13 +685,13 @@ Run:
 ```bash
 git diff --check
 git status --short
-git diff -- README.md .mcp.example.json
+git diff -- README.md .mcp.example.json history/2026-07-13-credential-free-local-database-implementation-plan.md
 git check-ignore .env .mcp.json
-git add README.md .mcp.example.json
+git add README.md .mcp.example.json history/2026-07-13-credential-free-local-database-implementation-plan.md
 git commit -m "Document credential-free local database setup"
 ```
 
-Expected: `.env` and `.mcp.json` remain local, ignored, and uncommitted. Close the Phase 2 Beads issue with a tracker-only commit as in Phase 1, then stop for explicit Phase 3 approval. Do not push.
+Expected: exactly the three approved tracked files are committed; `.env` and `.mcp.json` remain local, ignored, and uncommitted. Close the Phase 2 Beads issue with a tracker-only commit as in Phase 1, then stop for explicit Phase 3 approval. Do not push.
 
 ---
 
