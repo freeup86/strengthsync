@@ -1,7 +1,0 @@
-[mcp_servers.postgres]
-command = "npx"
-args = [
-    "-y",
-    "@anthropic-ai/mcp-server-postgres",
-    "postgresql://strengthsync:bUH1qWwjalyF88unkqRpjYoV7WVdmT36@dpg-d4u72fnpm1nc7399rg70-a.oregon-postgres.render.com/strengthsync",
-]

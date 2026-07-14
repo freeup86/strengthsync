@@ -53,3 +53,10 @@ CLAUDE.md
 
 # MCP config (contains credentials)
 .mcp.json
+.codex/config.toml
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
