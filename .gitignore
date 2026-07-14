@@ -43,6 +43,9 @@ prisma/migrations/**/migration_lock.toml
 .idea
 .vscode
 
+# Isolated development worktrees
+/.worktrees/
+
 # OS
 Thumbs.db
 
