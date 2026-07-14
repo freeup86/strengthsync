@@ -782,6 +782,14 @@ test("reports path, line, and type without secret content", () => {
 });
 ```
 
+Extend this baseline with reviewed regression tests that:
+
+- reject credential-bearing raw backslashes in the authority as `malformed-postgresql-credentials` before applying loopback or documentation exceptions, without leaking the candidate;
+- keep rejecting credential-bearing URLs with query strings, including destination-routing overrides and documentation-placeholder URLs;
+- preserve the closing bracket of a balanced IPv6 authority while trimming unmatched trailing prose punctuation;
+- prove staged mode reads exact index bytes for ordinary paths and the legal path `0:foo`;
+- stage a regular file as a symlink, assert Git reports status `T`, and prove staged mode scans the indexed symlink payload.
+
 ### Step 2: Observe the intended failure
 
 Run:
@@ -805,8 +813,10 @@ Create `scripts/check-postgres-secrets.mjs` with:
 - Loopback allowlist: `localhost`, `127.0.0.1`, `::1`, `[::1]`.
 - Documentation exception only when the host is `example.com` or ends in `.example.com`, username is `user` or `username`, and password is `password`, `example`, or `changeme`.
 - `malformed-postgresql-credentials` for credential-shaped candidates that cannot be parsed.
-- Repository mode using `git ls-files -z` and current working-tree bytes.
-- Staged mode using `git diff --cached --name-only --diff-filter=ACMR -z` and `git show` with the index-qualified path argument so the hook scans the exact index content.
+- Raw backslashes in a credential-bearing authority rejected as malformed before evaluating loopback or documentation exceptions.
+- Query strings on credential-bearing candidates rejected before exceptions, including percent-encoded destination-routing overrides.
+- Repository mode using `git ls-files -z` and current working-tree bytes, without following tracked symlinks outside the repository.
+- Staged mode using `git diff --cached --name-only --diff-filter=ACMRT -z` and `git show :./${filePath}` (passed as separate argv values) so the hook scans the exact index content, including type changes and legal paths such as `0:foo`.
 - NUL-containing files treated as binary and skipped.
 - UTF-8 decoding through `new TextDecoder("utf-8", { fatal: true })`; unreadable or invalid tracked text fails the scan.
 - CLI accepts no argument or only `--staged`; unknown arguments fail.
@@ -824,7 +834,7 @@ const PLACEHOLDER_USERS = new Set(["user", "username"]);
 const PLACEHOLDER_PASSWORDS = new Set(["password", "example", "changeme"]);
 ```
 
-Trim only common trailing prose punctuation `)`, `]`, `}`, `,`, `.`, and `;` before parsing. Determine line number from the match offset rather than including a source excerpt.
+Trim only unmatched common trailing prose punctuation `)`, `]`, `}`, `,`, `.`, and `;` before parsing, preserving `]` when it closes a balanced IPv6 authority. Determine line number from the match offset rather than including a source excerpt.
 
 ### Step 2: Run tests and the repository scan
 
