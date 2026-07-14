@@ -46,6 +46,9 @@ prisma/migrations/**/migration_lock.toml
 # Isolated development worktrees
 /.worktrees/
 
+# Subagent-driven development scratch state
+/.superpowers/
+
 # OS
 Thumbs.db
 
