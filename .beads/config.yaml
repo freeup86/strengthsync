@@ -55,4 +55,4 @@
 # - github.repo
 # - sync.branch - Git branch for beads commits (use BEADS_SYNC_BRANCH env var or bd config set)
 
-# sync.remote: "git+https://github.com/freeup86/strengthsync.git"
+sync.remote: "git+https://github.com/lcortez-code/strengthsync.git"
