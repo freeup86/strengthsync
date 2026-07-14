@@ -8,6 +8,7 @@ import {
   rmSync,
   statSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -83,6 +84,20 @@ test("accepts disposable loopback URLs", () => {
   assert.deepEqual(scanText(text, ".env.example"), []);
 });
 
+test("preserves a balanced IPv6 authority bracket while trimming unmatched prose brackets", () => {
+  assert.deepEqual(
+    scanText(postgresqlUrl("local:local@[::1]"), ".env.example"),
+    []
+  );
+  assert.deepEqual(
+    scanText(
+      `${postgresqlUrl("service:secret@db.vendor.test/app")}]`,
+      "settings.md"
+    ),
+    [{ filePath: "settings.md", line: 1, type: "postgresql-credentials" }]
+  );
+});
+
 test("accepts explicit documentation credentials on example hosts", () => {
   assert.deepEqual(
     scanText(postgresqlUrl("user:password@db.example.com:5432/app"), "README.md"),
@@ -96,6 +111,37 @@ test("reports malformed credential-shaped PostgreSQL URLs", () => {
     [{ filePath: "broken.env", line: 1, type: "malformed-postgresql-credentials" }]
   );
 });
+
+for (const [description, apparentHost] of [
+  ["loopback", "localhost"],
+  ["documentation placeholder", "db.example.com"],
+]) {
+  test(`rejects ${description} raw-backslash authority confusion without leaking details`, () => {
+    const rawBackslash = String.fromCharCode(92);
+    const databaseUrl = postgresqlUrl(
+      `user:password@${apparentHost}${rawBackslash}@remote.vendor.test/app`
+    );
+    const findings = scanText(databaseUrl, "backslash.env");
+    assert.deepEqual(findings, [
+      {
+        filePath: "backslash.env",
+        line: 1,
+        type: "malformed-postgresql-credentials",
+      },
+    ]);
+
+    const output = formatFindings(findings);
+    for (const privateText of [
+      databaseUrl,
+      "user",
+      "password",
+      apparentHost,
+      "remote.vendor.test",
+    ]) {
+      assert.equal(output.includes(privateText), false);
+    }
+  });
+}
 
 test("reports path, line, and type without secret content", () => {
   const text = `safe\n${postgresqlUrl("private_user:private_password@db.vendor.test/app")}`;
@@ -193,6 +239,61 @@ test("staged mode scans exact index bytes rather than working-tree bytes", (t) =
     "config.env:1 postgresql-credentials\n"
   );
   assert.equal(runScanner(repository).status, 0);
+});
+
+test("staged mode scans the exact index blob for a legal 0:foo path", (t) => {
+  const repository = createRepository(t);
+  writeFileSync(join(repository, "foo"), "SAFE=true\n");
+  const databaseUrl = postgresqlUrl(
+    "colon_user:colon_password@db.vendor.test:5432/app"
+  );
+  writeFileSync(join(repository, "0:foo"), `${databaseUrl}\n`);
+  git(repository, ["add", "--", "foo", "0:foo"]);
+
+  const result = runScanner(repository, ["--staged"]);
+  assert.equal(result.status, 1);
+  assert.equal(scannerOutput(result), "0:foo:1 postgresql-credentials\n");
+  for (const privateText of [databaseUrl, "colon_user", "colon_password"]) {
+    assert.equal(scannerOutput(result).includes(privateText), false);
+  }
+});
+
+test("staged mode scans a regular file changed to a symlink", (t) => {
+  const repository = createRepository(t);
+  writeFileSync(join(repository, "config.env"), "SAFE=true\n");
+  git(repository, ["add", "--", "config.env"]);
+  git(repository, [
+    "-c",
+    "user.name=Security Test",
+    "-c",
+    "user.email=security@example.com",
+    "commit",
+    "--quiet",
+    "-m",
+    "Add safe config",
+  ]);
+
+  const databaseUrl = postgresqlUrl(
+    "symlink_user:symlink_password@db.vendor.test:5432/app"
+  );
+  unlinkSync(join(repository, "config.env"));
+  symlinkSync(databaseUrl, join(repository, "config.env"));
+  git(repository, ["add", "--", "config.env"]);
+
+  const nameStatus = run(
+    "git",
+    ["diff", "--cached", "--name-status"],
+    repository
+  );
+  assert.equal(nameStatus.status, 0);
+  assert.equal(nameStatus.stdout, "T\tconfig.env\n");
+
+  const result = runScanner(repository, ["--staged"]);
+  assert.equal(result.status, 1);
+  assert.equal(scannerOutput(result), "config.env:1 postgresql-credentials\n");
+  for (const privateText of [databaseUrl, "symlink_user", "symlink_password"]) {
+    assert.equal(scannerOutput(result).includes(privateText), false);
+  }
 });
 
 test("repository and staged modes skip NUL-containing binary files", (t) => {

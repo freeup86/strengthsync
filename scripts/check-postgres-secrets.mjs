@@ -14,19 +14,50 @@ const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 const PLACEHOLDER_HOST = /^(?:[a-z0-9-]+\.)*example\.com$/i;
 const PLACEHOLDER_USERS = new Set(["user", "username"]);
 const PLACEHOLDER_PASSWORDS = new Set(["password", "example", "changeme"]);
-const TRAILING_PROSE_PUNCTUATION = /[\)\]\},.;]+$/u;
+const TRAILING_PROSE_PUNCTUATION = new Set([")", "]", "}", ",", ".", ";"]);
 const CONTROL_CHARACTERS = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu;
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
 
 class SecretScanError extends Error {}
 
+function authorityBounds(candidate) {
+  const start = candidate.indexOf("://") + 3;
+  const separatorOffset = candidate.slice(start).search(/[/?#]/u);
+  const end = separatorOffset === -1 ? candidate.length : start + separatorOffset;
+  return { end, start };
+}
+
+function trimTrailingProsePunctuation(candidate) {
+  const { end: authorityEnd, start: authorityStart } = authorityBounds(candidate);
+  const authority = candidate.slice(authorityStart, authorityEnd);
+  const hostStart = authority.lastIndexOf("@") + 1;
+  const ipv6Open = authority.indexOf("[", hostStart);
+  const ipv6Close =
+    ipv6Open === -1 ? -1 : authority.indexOf("]", ipv6Open + 1);
+  const protectedBracket =
+    ipv6Close === -1 ? -1 : authorityStart + ipv6Close;
+
+  let end = candidate.length;
+  while (end > 0 && TRAILING_PROSE_PUNCTUATION.has(candidate[end - 1])) {
+    if (end - 1 === protectedBracket) {
+      break;
+    }
+    end -= 1;
+  }
+  return candidate.slice(0, end);
+}
+
 function hasCredentialShape(candidate) {
-  const authority = candidate
-    .slice(candidate.indexOf("://") + 3)
-    .split(/[/?#]/u, 1)[0];
+  const { end, start } = authorityBounds(candidate);
+  const authority = candidate.slice(start, end);
   const passwordSeparator = authority.indexOf(":");
   const hostSeparator = authority.lastIndexOf("@");
   return passwordSeparator > 0 && hostSeparator > passwordSeparator;
+}
+
+function hasRawAuthorityBackslash(candidate) {
+  const { end, start } = authorityBounds(candidate);
+  return candidate.slice(start, end).includes("\\");
 }
 
 function lineAt(text, offset) {
@@ -44,8 +75,17 @@ export function scanText(text, filePath) {
   const findings = [];
 
   for (const match of text.matchAll(POSTGRES_URL_PATTERN)) {
-    const candidate = match[0].replace(TRAILING_PROSE_PUNCTUATION, "");
+    const candidate = trimTrailingProsePunctuation(match[0]);
     if (!hasCredentialShape(candidate)) {
+      continue;
+    }
+
+    if (hasRawAuthorityBackslash(candidate)) {
+      findings.push({
+        filePath,
+        line: lineAt(text, match.index),
+        type: "malformed-postgresql-credentials",
+      });
       continue;
     }
 
@@ -120,7 +160,7 @@ function listRepositoryPaths() {
 function listStagedPaths() {
   return decodePathList(
     runGit(
-      ["diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"],
+      ["diff", "--cached", "--name-only", "--diff-filter=ACMRT", "-z"],
       "diff"
     )
   );
@@ -149,7 +189,7 @@ function readWorkingTreeBytes(filePath) {
 }
 
 function readStagedBytes(filePath) {
-  return runGit(["show", `:${filePath}`], "show");
+  return runGit(["show", `:./${filePath}`], "show");
 }
 
 function scanBytes(bytes, filePath) {
