@@ -284,7 +284,7 @@ export function main(args = process.argv.slice(2)) {
       return;
     case "destroy":
       assertConfirmation(actionArgs, "--confirm-local-destroy");
-      run("docker", ["compose", "--env-file", ".env.example", "down", "--volumes"]);
+      run("docker", ["compose", "--env-file", ".env", "down", "--volumes"]);
       return;
     default:
       throw new LocalDatabaseSafetyError(
@@ -416,10 +416,10 @@ Preserve every dependency and replace the script object with this exact target:
   "db:seed": "node --env-file=.env scripts/assert-local-database.mjs seed",
   "db:reset": "node --env-file=.env scripts/assert-local-database.mjs reset",
   "db:local:guard": "node --env-file=.env scripts/assert-local-database.mjs guard",
-  "db:local:up": "docker compose --env-file .env.example up -d --wait --wait-timeout 60 db",
+  "db:local:up": "docker compose --env-file .env up -d --wait --wait-timeout 60 db",
   "db:local:setup": "node --env-file=.env scripts/assert-local-database.mjs setup",
   "db:local:reset": "node --env-file=.env scripts/assert-local-database.mjs reset",
-  "db:local:down": "docker compose --env-file .env.example down",
+  "db:local:down": "docker compose --env-file .env down",
   "db:local:destroy": "node --env-file=.env scripts/assert-local-database.mjs destroy",
   "db:prod:console": "render psql",
   "test:local-db": "node --test scripts/assert-local-database.test.mjs"
@@ -522,7 +522,7 @@ Expected before editing: both report a Render host but never print usernames, pa
 
 ### Step 2: Patch `.env` in place
 
-Preserve every unrelated local value. Replace only `DATABASE_URL` and add/update these four Compose variables:
+Preserve every unrelated local value. The tracked `.env.example` keeps the reusable default port `5432`. In the ignored `.env`, replace only `DATABASE_URL` and add/update these four Compose variables, using the same loopback host, port, database, and credential set throughout. The ignored file may choose another unused loopback port when `5432` is occupied, but `POSTGRES_PORT` and the port in `DATABASE_URL` must match:
 
 ```dotenv
 POSTGRES_USER=strengthsync_local
@@ -546,7 +546,7 @@ npm view @yawlabs/postgres-mcp@0.6.20 version
 
 Expected exact output: `0.6.20`.
 
-Both files must contain:
+The tracked `.mcp.example.json` keeps the reusable default port `5432` and must contain:
 
 ```json
 {
@@ -564,6 +564,8 @@ Both files must contain:
   }
 }
 ```
+
+The ignored `.mcp.json` must use the same loopback host, port, database, and credential set as the ignored `.env`. It may therefore use the same alternate unused port selected in `.env` without changing the tracked example defaults.
 
 ### Step 4: Restore ignored-file permissions and prove local-only state
 
@@ -641,18 +643,18 @@ Run:
 ```bash
 npm run db:local:up
 npm run db:local:setup
-docker compose --env-file .env.example ps
-docker compose --env-file .env.example port db 5432
+docker compose --env-file .env ps
+docker compose --env-file .env port db 5432
 ```
 
-Expected: `db` is healthy; the published address is `127.0.0.1:5432`; Prisma schema application and seed succeed.
+Expected: `db` is healthy; the published address is `127.0.0.1:${POSTGRES_PORT}`; Prisma schema application and seed succeed. This integration run verified `127.0.0.1:55433` because ports `5432` and `5433` were occupied, without changing the reusable `5432` default in `.env.example` and `.mcp.example.json`.
 
 ### Step 2: Query the real schema for exact seed counts
 
 Run:
 
 ```bash
-docker compose --env-file .env.example exec -T db psql -U strengthsync_local -d strengthsync_local -Atc 'SELECT (SELECT count(*) FROM "StrengthDomain"), (SELECT count(*) FROM "StrengthTheme"), (SELECT count(*) FROM "Badge"), (SELECT count(*) FROM "Organization"), (SELECT count(*) FROM "User");'
+docker compose --env-file .env exec -T db psql -U strengthsync_local -d strengthsync_local -Atc 'SELECT (SELECT count(*) FROM "strength_domains"), (SELECT count(*) FROM "strength_themes"), (SELECT count(*) FROM "badges"), (SELECT count(*) FROM "organizations"), (SELECT count(*) FROM "users");'
 ```
 
 Expected exact output:
@@ -675,7 +677,7 @@ npm run db:local:destroy
 Expected: both FAIL before changing the database and tell the user which confirmation flag is required. Then prove the database is still healthy:
 
 ```bash
-docker compose --env-file .env.example ps
+docker compose --env-file .env ps
 ```
 
 ### Step 4: Review and commit only tracked Phase 2 files
@@ -945,9 +947,9 @@ Run:
 npm run db:local:destroy -- --confirm-local-destroy
 npm run db:local:up
 npm run db:local:setup
-docker compose --env-file .env.example ps
-docker compose --env-file .env.example port db 5432
-docker compose --env-file .env.example exec -T db psql -U strengthsync_local -d strengthsync_local -Atc 'SELECT (SELECT count(*) FROM "StrengthDomain"), (SELECT count(*) FROM "StrengthTheme"), (SELECT count(*) FROM "Badge"), (SELECT count(*) FROM "Organization"), (SELECT count(*) FROM "User");'
+docker compose --env-file .env ps
+docker compose --env-file .env port db 5432
+docker compose --env-file .env exec -T db psql -U strengthsync_local -d strengthsync_local -Atc 'SELECT (SELECT count(*) FROM "strength_domains"), (SELECT count(*) FROM "strength_themes"), (SELECT count(*) FROM "badges"), (SELECT count(*) FROM "organizations"), (SELECT count(*) FROM "users");'
 ```
 
 Expected: healthy database, loopback-only port, exact count `4|34|20|0|0`.
