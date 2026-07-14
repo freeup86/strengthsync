@@ -1,67 +1,23 @@
-# =============================================================================
-# StrengthSync Docker Compose
-# For local development and production deployment
-# =============================================================================
-
-version: '3.8'
+name: strengthsync-local
 
 services:
-  # PostgreSQL Database
   db:
     image: postgres:15-alpine
-    container_name: strengthsync-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-strengthsync}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in the Compose environment file}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the Compose environment file}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in the Compose environment file}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:?Set POSTGRES_PORT in the Compose environment file}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
       timeout: 5s
-      retries: 5
-
-  # StrengthSync Application
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: strengthsync-app
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-strengthsync}
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-    ports:
-      - "3000:3000"
-
-  # Database migrations (run once)
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deps
-    container_name: strengthsync-migrate
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-strengthsync}
-    command: sh -c "npx prisma db push && npx tsx prisma/seed.ts"
-    profiles:
-      - setup
+      retries: 15
 
 volumes:
   postgres_data:
-    driver: local
-
-networks:
-  default:
-    name: strengthsync-network
+    name: strengthsync-local-postgres-data
