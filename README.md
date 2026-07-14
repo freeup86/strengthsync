@@ -25,64 +25,68 @@ A CliftonStrengths-based team collaboration app that helps teams discover, lever
 
 ### Prerequisites
 
-- Node.js 18+
-- PostgreSQL 14+
-- npm or yarn
+- Node.js 20.6 or newer
+- Docker Desktop with Docker Compose
+- npm
+- Render CLI only when running production database diagnostics
 
 ### Installation
 
 1. Clone the repository:
+
 ```bash
-git clone https://github.com/freeup86/strengthsync.git
+git clone https://github.com/lcortez-code/strengthsync.git
 cd strengthsync
 ```
 
-2. Install dependencies:
+2. Create your local configuration:
+
+```bash
+cp .env.example .env
+```
+
+Local `.env` and `.mcp.json` files must never contain a Render PostgreSQL URL. The local database is PostgreSQL in Docker, published only on `127.0.0.1`; its Docker volume is disposable.
+
+3. Install dependencies, start and initialize PostgreSQL, then start the app:
+
 ```bash
 npm install
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` with your database credentials and secrets:
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/strengthsync
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-key-here
-```
-
-4. Set up the database:
-```bash
-# Generate Prisma client
-npm run db:generate
-
-# Push schema to database
-npm run db:push
-
-# Seed initial data (domains, themes, badges)
-npm run db:seed
-```
-
-5. Start the development server:
-```bash
+npm run db:local:up
+npm run db:local:setup
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Database Commands
+## Database Workflow
+
+### Local lifecycle and mutations
 
 ```bash
-npm run db:generate    # Generate Prisma client
-npm run db:push        # Push schema to database
-npm run db:migrate     # Run migrations (production)
-npm run db:seed        # Seed domains, themes, badges
-npm run db:reset       # Reset database
-npx prisma studio      # Open Prisma Studio (DB GUI)
+npm run db:local:up
+npm run db:local:setup
+npm run db:migrate
+npm run db:seed
+npm run db:local:reset -- --confirm-local-reset
+npm run db:local:down
+npm run db:local:destroy -- --confirm-local-destroy
 ```
+
+- `db:local:up` starts the loopback-only PostgreSQL container.
+- `db:local:setup` prepares the local database for application development.
+- `db:migrate` creates and applies development migrations with `prisma migrate dev`.
+- `db:seed` is reference-only. Create application organizations and users through the UI or API.
+- `db:local:reset` and `db:local:destroy` require their explicit confirmation flags to protect non-local databases.
+- `db:local:down` stops the container while retaining the disposable local volume; `db:local:destroy` removes it.
+
+### Production diagnostics
+
+```bash
+render login
+npm run db:prod:console
+```
+
+`render psql` through `npm run db:prod:console` is the only supported local path to the production database. Do not copy a production DSN into application, Prisma, MCP, or shell configuration.
 
 ## Development
 
@@ -94,33 +98,25 @@ npm run lint           # Run ESLint
 npm run type-check     # TypeScript type checking
 ```
 
-## Docker Deployment
-
-### Using Docker Compose
+Phase 3 adds repository commit protection for PostgreSQL URLs. Install those hooks after Phase 3 is available:
 
 ```bash
-# Build and start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+npm run hooks:install
 ```
 
-### Environment Variables
+## Environment Variables
 
 See `.env.example` for all available environment variables.
 
 Required:
+
 - `DATABASE_URL` - PostgreSQL connection string
 - `NEXTAUTH_URL` - Application URL
 - `NEXTAUTH_SECRET` - Secret for session encryption
 
 Optional:
+
 - `AWS_*` - For S3 file uploads
-- `REDIS_URL` - For caching (future)
 
 ## CliftonStrengths Data
 

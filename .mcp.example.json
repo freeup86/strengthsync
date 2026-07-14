@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-server-postgres",
+        "postgresql://strengthsync_local:strengthsync_local_dev@127.0.0.1:5432/strengthsync_local"
+      ]
+    }
+  }
+}
