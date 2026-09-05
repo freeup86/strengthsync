@@ -37,7 +37,9 @@ yarn-error.log*
 next-env.d.ts
 
 # Prisma
-prisma/migrations/**/migration_lock.toml
+# Nothing under prisma/migrations/ is ignored. `prisma migrate deploy` runs from
+# the deployed image, so the migration SQL and migration_lock.toml must be
+# committed or production has no migration history to apply.
 
 # IDE
 .idea

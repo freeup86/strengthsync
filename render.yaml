@@ -1,0 +1,113 @@
+# =============================================================================
+# UNRECONCILED BLUEPRINT - DO NOT SYNC THIS FILE TO RENDER YET.
+#
+# The `strengthsync` service was created and configured by hand in the Render
+# dashboard. This file was written from the repository alone, so several values
+# below are inferred, not observed. Adopting a Blueprint over a hand-configured
+# service makes the Blueprint authoritative: any setting that differs here
+# overwrites the live one, and anything omitted here can be reset to a default.
+#
+# Before you connect this Blueprint, open the dashboard and reconcile every
+# line marked CONFIRM against the running service and database. Settings that
+# are wrong in this file and are live in the dashboard include at minimum:
+# service name, region, plan/instance type, branch, database name and user,
+# Postgres major version, and the full environment variable list.
+#
+# See docs/production-database.md for the migration baselining procedure. The
+# `prisma migrate deploy` step below WILL FAIL on its first run until that
+# baseline has been recorded once against the production database.
+# =============================================================================
+
+databases:
+  # CONFIRM: name, databaseName, user, plan, region, and postgresMajorVersion
+  # must match the existing Render Postgres instance exactly, or Render will
+  # try to create a second database instead of adopting the current one.
+  - name: strengthsync-db
+    databaseName: strengthsync
+    user: strengthsync
+    plan: basic-256mb
+    region: oregon
+    # Empty allow list: no public IP may reach this database. Only Render
+    # services in the same region, connecting over the internal network with
+    # the internal connection string, can talk to it. This is the goal of the
+    # whole change - it also permanently breaks `npm run db:prod:console`,
+    # which shells out to `render psql` over the public endpoint.
+    ipAllowList: []
+
+services:
+  - type: web
+    # CONFIRM: must match the existing service name exactly to adopt it.
+    name: strengthsync
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+
+    # Inferred from package.json: `postinstall` runs `prisma generate`, and
+    # `build` runs `next build`. Note that the Prisma CLI is a devDependency,
+    # so NODE_ENV must NOT be set to `production` at build time or npm skips
+    # devDependencies and both `prisma generate` and `next build` fail.
+    buildCommand: npm ci && npm run build
+
+    # The migration step. preDeployCommand runs after a successful build and
+    # before any traffic shifts to the new instance; a non-zero exit cancels
+    # the deploy and leaves the previous version serving.
+    #
+    # preDeployCommand requires a PAID instance type. It is silently ignored
+    # on the free plan. If this service is on the free plan, delete this line
+    # and use the startCommand chain documented below instead.
+    preDeployCommand: npx prisma migrate deploy
+
+    # Inferred from package.json: `start` runs `next start`, which binds to
+    # $PORT. Render sets PORT itself.
+    #
+    # FREE PLAN FALLBACK - if preDeployCommand above is unavailable, remove it
+    # and use this startCommand instead:
+    #   startCommand: npx prisma migrate deploy && npm run start
+    # The tradeoff is that migrations then run on every instance start, inside
+    # the health check window, and a failed migration crash-loops the service
+    # rather than cleanly cancelling the deploy.
+    startCommand: npm run start
+
+    envVars:
+      # The internal connection string. It resolves to Render's private
+      # network, so it keeps working with `ipAllowList: []`.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: strengthsync-db
+          property: connectionString
+
+      # CONFIRM: every variable below is set by hand in the dashboard today.
+      # `sync: false` means "Render prompts for this value and never stores it
+      # in git" - it does not carry the current dashboard value over, so read
+      # each one out of the dashboard before syncing.
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_ORG_ID
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_S3_BUCKET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: TEAMS_WEBHOOK_URL
+        sync: false
+      - key: MICROSOFT_APP_ID
+        sync: false
+      - key: MICROSOFT_APP_PASSWORD
+        sync: false
+      - key: MICROSOFT_APP_TENANT_ID
+        sync: false

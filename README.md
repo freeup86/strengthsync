@@ -79,6 +79,14 @@ npm run db:local:destroy -- --confirm-local-destroy
 - The reset and destroy confirmation flags prevent accidental destructive operations on the local database, while the loopback guard blocks non-local targets.
 - `db:local:down` stops the container while retaining the disposable local volume; `db:local:destroy` removes it.
 
+### Production migrations
+
+Production schema changes run inside Render with `prisma migrate deploy`. Before
+that can work, the existing production database has to be told once that the
+baseline migration in `prisma/migrations/` is already applied, and the order of
+that step matters. Read [docs/production-database.md](docs/production-database.md)
+before deploying a schema change or before emptying the database's `ipAllowList`.
+
 ### Production diagnostics
 
 ```bash
@@ -87,6 +95,10 @@ npm run db:prod:console
 ```
 
 `render psql` through `npm run db:prod:console` is the only supported local path to the production database. Do not copy a production DSN into application, Prisma, MCP, or shell configuration.
+
+This path depends on the database's `ipAllowList` containing your IP. Once that
+list is emptied, `npm run db:prod:console` stops working and a Render Shell on
+the web service becomes the way to reach the database.
 
 ## Development
 
